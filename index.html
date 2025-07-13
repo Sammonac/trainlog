@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -41,6 +42,7 @@
             display: none;
             flex: 1;
             padding: 1rem;
+            overflow-y: auto;
         }
 
         .screen.active {
@@ -68,42 +70,6 @@
             color: white;
         }
 
-        .record-area {
-            text-align: center;
-            margin: 2rem 0;
-        }
-
-        .record-btn {
-            width: 200px;
-            height: 200px;
-            border-radius: 50%;
-            background: #dc2626;
-            border: none;
-            color: white;
-            font-size: 1.2rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 1rem;
-            transition: background 0.2s;
-        }
-
-        .record-btn:hover {
-            background: #b91c1c;
-        }
-
-        .record-btn.recording {
-            background: #059669;
-            animation: pulse 1s infinite;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-
         .text-input {
             width: 100%;
             padding: 0.75rem;
@@ -118,20 +84,18 @@
             border-color: #2563eb;
         }
 
-        .preview-area {
-            background: #f8f9fa;
-            padding: 1rem;
+        .number-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e7eb;
             border-radius: 8px;
-            margin: 1rem 0;
-            min-height: 120px;
+            font-size: 1rem;
+            text-align: center;
         }
 
-        .exercise-item {
-            margin: 0.5rem 0;
-            padding: 0.5rem;
-            background: white;
-            border-radius: 4px;
-            border-left: 4px solid #2563eb;
+        .number-input:focus {
+            outline: none;
+            border-color: #2563eb;
         }
 
         .btn {
@@ -156,6 +120,14 @@
 
         .btn-secondary:hover {
             background: #4b5563;
+        }
+
+        .btn-success {
+            background: #059669;
+        }
+
+        .btn-success:hover {
+            background: #047857;
         }
 
         .workout-list {
@@ -260,6 +232,74 @@
             font-weight: 600;
             color: #374151;
         }
+
+        /* Exercise logging styles */
+        .exercise-card {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            margin: 1rem 0;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .exercise-card.completed {
+            border-color: #059669;
+            background: #f0fdf4;
+        }
+
+        .exercise-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .input-group {
+            flex: 1;
+            text-align: center;
+        }
+
+        .input-label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #6b7280;
+            margin-bottom: 0.5rem;
+        }
+
+        .exercise-status {
+            text-align: center;
+            margin-top: 1rem;
+            font-weight: 600;
+        }
+
+        .exercise-status.completed {
+            color: #059669;
+        }
+
+        .exercise-status.incomplete {
+            color: #dc2626;
+        }
+
+        .workout-summary {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .summary-item {
+            margin: 0.5rem 0;
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 <body>
@@ -311,35 +351,28 @@
             </div>
         </div>
 
-        <!-- Voice Entry Screen -->
-        <div id="entry-screen" class="screen active">
-            <h2 style="text-align: center; margin-bottom: 1rem;">LOG WORKOUT</h2>
+        <!-- Exercise Logging Screen -->
+        <div id="logging-screen" class="screen active">
+            <h2 style="text-align: center; margin-bottom: 1rem;">📝 LOG WORKOUT</h2>
             
-            <div class="record-area">
-                <button id="record-btn" class="record-btn">
-                    🎤<br>TAP TO RECORD
-                </button>
-                <p style="color: #6b7280;">Speak or type your workout...</p>
-            </div>
-
-            <textarea 
-                id="workout-input" 
-                class="text-input" 
-                placeholder="Try: 'Squats 3x10 @ 225, Bench press 3x5 @ 185, Deadlift 1x5 @ 315'"
-                rows="3"
-            ></textarea>
-
-            <div class="preview-area">
-                <h3 style="margin-bottom: 0.5rem;">PARSED WORKOUT PREVIEW:</h3>
-                <div id="workout-preview"></div>
-            </div>
-
-            <button id="save-workout-btn" class="btn">💾 SAVE WORKOUT</button>
-            <button id="clear-btn" class="btn btn-secondary">🗑️ CLEAR</button>
-
-            <p style="text-align: center; margin-top: 1rem; color: #6b7280;">
+            <p style="text-align: center; margin-bottom: 1rem; color: #6b7280;">
                 Today: <span id="current-date"></span>
             </p>
+
+            <div id="exercises-container"></div>
+
+            <div class="workout-summary" id="workout-summary" style="display: none;">
+                <h3 style="margin-bottom: 0.5rem;">📋 Workout Summary</h3>
+                <div id="summary-content"></div>
+            </div>
+
+            <button id="save-workout-btn" class="btn btn-success" style="display: none;">
+                💾 SAVE WORKOUT
+            </button>
+            
+            <button id="clear-workout-btn" class="btn btn-secondary">
+                🗑️ CLEAR ALL
+            </button>
         </div>
 
         <!-- History Screen -->
@@ -385,8 +418,8 @@
 
         <!-- Navigation -->
         <div class="nav-tabs">
-            <button class="nav-tab active" data-screen="entry">🎤<br>Record</button>
-            <button class="nav-tab" data-screen="history">📝<br>History</button>
+            <button class="nav-tab active" data-screen="logging">📝<br>Log</button>
+            <button class="nav-tab" data-screen="history">📚<br>History</button>
             <button class="nav-tab" data-screen="progress">📊<br>Progress</button>
         </div>
     </div>
@@ -396,25 +429,21 @@
         let workoutData = [];
         let trackedExercises = [];
         let currentChart = null;
+        let currentWorkout = {};
 
         // Check if this is first time user
         function isFirstTimeUser() {
-            // In production, replace with: return !localStorage.getItem('trackedExercises');
             return trackedExercises.length === 0;
         }
 
         // Load tracked exercises from storage
         function loadTrackedExercises() {
-            // In production, replace with:
-            // const stored = localStorage.getItem('trackedExercises');
-            // return stored ? JSON.parse(stored) : [];
             return trackedExercises;
         }
 
         // Save tracked exercises to storage
         function saveTrackedExercises(exercises) {
             trackedExercises = exercises;
-            // In production, add: localStorage.setItem('trackedExercises', JSON.stringify(exercises));
         }
 
         // Sample data for demo
@@ -483,16 +512,19 @@
             
             saveTrackedExercises(exercises);
             
-            // Hide onboarding and show main app
+            // Initialize logging screen
+            initializeLoggingScreen();
+            
+            // Hide onboarding and show logging screen
             document.getElementById('onboarding-screen').classList.remove('active');
-            document.getElementById('entry-screen').classList.add('active');
+            document.getElementById('logging-screen').classList.add('active');
             
             // Show navigation
             document.querySelector('.nav-tabs').style.display = 'flex';
             
             // Update navigation
             document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-            document.querySelector('[data-screen="entry"]').classList.add('active');
+            document.querySelector('[data-screen="logging"]').classList.add('active');
             
             alert(`Saved ${exercises.length} exercises successfully!`);
         }
@@ -509,7 +541,132 @@
             } else {
                 // Load existing exercises and show main app
                 trackedExercises = loadTrackedExercises();
+                initializeLoggingScreen();
                 document.querySelector('.nav-tabs').style.display = 'flex';
+            }
+        }
+
+        // Initialize logging screen
+        function initializeLoggingScreen() {
+            const container = document.getElementById('exercises-container');
+            currentWorkout = {};
+            
+            container.innerHTML = trackedExercises.map(exercise => `
+                <div class="exercise-card" id="card-${exercise.replace(/\s+/g, '-').toLowerCase()}">
+                    <div class="exercise-name">🏋️ ${exercise}</div>
+                    
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label class="input-label">Sets</label>
+                            <input 
+                                type="number" 
+                                class="number-input" 
+                                id="sets-${exercise.replace(/\s+/g, '-').toLowerCase()}"
+                                min="1" 
+                                max="10" 
+                                placeholder="3"
+                                onchange="updateExercise('${exercise}')"
+                            >
+                        </div>
+                        
+                        <div class="input-group">
+                            <label class="input-label">Reps</label>
+                            <input 
+                                type="number" 
+                                class="number-input" 
+                                id="reps-${exercise.replace(/\s+/g, '-').toLowerCase()}"
+                                min="1" 
+                                max="50" 
+                                placeholder="10"
+                                onchange="updateExercise('${exercise}')"
+                            >
+                        </div>
+                        
+                        <div class="input-group">
+                            <label class="input-label">Weight (lbs)</label>
+                            <input 
+                                type="number" 
+                                class="number-input" 
+                                id="weight-${exercise.replace(/\s+/g, '-').toLowerCase()}"
+                                min="0" 
+                                step="5" 
+                                placeholder="225"
+                                onchange="updateExercise('${exercise}')"
+                            >
+                        </div>
+                    </div>
+                    
+                    <div class="exercise-status incomplete" id="status-${exercise.replace(/\s+/g, '-').toLowerCase()}">
+                        ⚪ Not logged yet
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Update exercise data
+        function updateExercise(exerciseName) {
+            const exerciseId = exerciseName.replace(/\s+/g, '-').toLowerCase();
+            const sets = parseInt(document.getElementById(`sets-${exerciseId}`).value) || 0;
+            const reps = parseInt(document.getElementById(`reps-${exerciseId}`).value) || 0;
+            const weight = parseInt(document.getElementById(`weight-${exerciseId}`).value) || 0;
+            
+            if (sets > 0 && reps > 0 && weight > 0) {
+                // Create sets array
+                const setsArray = [];
+                for (let i = 0; i < sets; i++) {
+                    setsArray.push({ reps: reps, weight: weight });
+                }
+                
+                currentWorkout[exerciseName] = {
+                    name: exerciseName,
+                    sets: setsArray
+                };
+                
+                // Update UI
+                const card = document.getElementById(`card-${exerciseId}`);
+                const status = document.getElementById(`status-${exerciseId}`);
+                
+                card.classList.add('completed');
+                status.classList.remove('incomplete');
+                status.classList.add('completed');
+                status.innerHTML = `✅ ${sets} sets × ${reps} reps @ ${weight} lbs`;
+            } else {
+                // Remove from current workout
+                delete currentWorkout[exerciseName];
+                
+                // Update UI
+                const card = document.getElementById(`card-${exerciseId}`);
+                const status = document.getElementById(`status-${exerciseId}`);
+                
+                card.classList.remove('completed');
+                status.classList.remove('completed');
+                status.classList.add('incomplete');
+                status.innerHTML = '⚪ Not logged yet';
+            }
+            
+            updateWorkoutSummary();
+        }
+
+        // Update workout summary
+        function updateWorkoutSummary() {
+            const summary = document.getElementById('workout-summary');
+            const content = document.getElementById('summary-content');
+            const saveBtn = document.getElementById('save-workout-btn');
+            
+            const exerciseCount = Object.keys(currentWorkout).length;
+            
+            if (exerciseCount > 0) {
+                summary.style.display = 'block';
+                saveBtn.style.display = 'block';
+                
+                content.innerHTML = Object.values(currentWorkout).map(exercise => `
+                    <div class="summary-item">
+                        <strong>${exercise.name}:</strong> ${exercise.sets.length} sets × ${exercise.sets[0].reps} reps @ ${exercise.sets[0].weight} lbs
+                    </div>
+                `).join('');
+            } else {
+                summary.style.display = 'none';
+                saveBtn.style.display = 'none';
             }
         }
 
@@ -535,117 +692,20 @@
             }
         }
 
-        // Voice Entry functionality
-        document.getElementById('current-date').textContent = new Date().toLocaleDateString();
-
-        document.getElementById('workout-input').addEventListener('input', (e) => {
-            parseWorkoutInput(e.target.value);
-        });
-
-        document.getElementById('record-btn').addEventListener('click', () => {
-            const btn = document.getElementById('record-btn');
-            const input = document.getElementById('workout-input');
-            
-            if (btn.classList.contains('recording')) {
-                btn.classList.remove('recording');
-                btn.innerHTML = '🎤<br>TAP TO RECORD';
-            } else {
-                btn.classList.add('recording');
-                btn.innerHTML = '⏹️<br>RECORDING...';
-                input.focus();
-                
-                // Simulate stopping after 3 seconds
-                setTimeout(() => {
-                    btn.classList.remove('recording');
-                    btn.innerHTML = '🎤<br>TAP TO RECORD';
-                }, 3000);
-            }
-        });
-
+        // Save workout
         document.getElementById('save-workout-btn').addEventListener('click', saveWorkout);
-        document.getElementById('clear-btn').addEventListener('click', clearWorkout);
-
-        function parseWorkoutInput(input) {
-            const preview = document.getElementById('workout-preview');
-            
-            if (!input.trim()) {
-                preview.innerHTML = '<p style="color: #6b7280;">Enter workout details above...</p>';
-                return;
-            }
-
-            const exercises = parseExercises(input);
-            
-            if (exercises.length === 0) {
-                preview.innerHTML = '<p style="color: #dc2626;">Could not parse exercises. Try format: "Exercise name 3x10 @ 225"</p>';
-                return;
-            }
-
-            preview.innerHTML = exercises.map(exercise => `
-                <div class="exercise-item">
-                    <strong>🏋️ ${exercise.name}</strong><br>
-                    ${exercise.sets.map((set, i) => `Set ${i + 1}: ${set.reps} reps @ ${set.weight} lbs`).join('<br>')}
-                </div>
-            `).join('');
-        }
-
-        function parseExercises(input) {
-            const exercises = [];
-            
-            // Split by comma to handle multiple exercises
-            const exerciseParts = input.split(',');
-            
-            for (let part of exerciseParts) {
-                part = part.trim();
-                if (!part) continue;
-                
-                // Regex patterns for different formats
-                const patterns = [
-                    /(.+?)\s+(\d+)x(\d+)\s*@\s*(\d+)/i,  // "Squats 3x10 @ 225"
-                    /(.+?)\s+(\d+)\s*sets?\s*of\s*(\d+)\s*reps?\s*at\s*(\d+)/i,  // "Bench 3 sets of 5 reps at 185"
-                    /(.+?)\s+(\d+)\s*sets?\s*(\d+)\s*reps?\s*(\d+)\s*lbs?/i,  // "Deadlift 1 set 5 reps 315 lbs"
-                ];
-                
-                let match = null;
-                for (let pattern of patterns) {
-                    match = part.match(pattern);
-                    if (match) break;
-                }
-                
-                if (match) {
-                    const [, name, sets, reps, weight] = match;
-                    const exercise = {
-                        name: name.trim(),
-                        sets: []
-                    };
-                    
-                    // Create sets array
-                    for (let i = 0; i < parseInt(sets); i++) {
-                        exercise.sets.push({
-                            reps: parseInt(reps),
-                            weight: parseInt(weight)
-                        });
-                    }
-                    
-                    exercises.push(exercise);
-                }
-            }
-            
-            return exercises;
-        }
+        document.getElementById('clear-workout-btn').addEventListener('click', clearWorkout);
 
         function saveWorkout() {
-            const input = document.getElementById('workout-input').value;
-            const exercises = parseExercises(input);
-            
-            if (exercises.length === 0) {
-                alert('Please enter valid workout data');
+            if (Object.keys(currentWorkout).length === 0) {
+                alert('Please log at least one exercise');
                 return;
             }
             
             const workout = {
                 id: Date.now(),
                 date: new Date().toLocaleDateString(),
-                exercises: exercises
+                exercises: Object.values(currentWorkout)
             };
             
             workoutData.unshift(workout);
@@ -655,8 +715,26 @@
         }
 
         function clearWorkout() {
-            document.getElementById('workout-input').value = '';
-            document.getElementById('workout-preview').innerHTML = '<p style="color: #6b7280;">Enter workout details above...</p>';
+            currentWorkout = {};
+            
+            // Clear all inputs
+            trackedExercises.forEach(exercise => {
+                const exerciseId = exercise.replace(/\s+/g, '-').toLowerCase();
+                document.getElementById(`sets-${exerciseId}`).value = '';
+                document.getElementById(`reps-${exerciseId}`).value = '';
+                document.getElementById(`weight-${exerciseId}`).value = '';
+                
+                // Reset UI
+                const card = document.getElementById(`card-${exerciseId}`);
+                const status = document.getElementById(`status-${exerciseId}`);
+                
+                card.classList.remove('completed');
+                status.classList.remove('completed');
+                status.classList.add('incomplete');
+                status.innerHTML = '⚪ Not logged yet';
+            });
+            
+            updateWorkoutSummary();
         }
 
         // History functionality
@@ -855,7 +933,7 @@
         }
 
         // Initialize
-        parseWorkoutInput('');
+        document.getElementById('current-date').textContent = new Date().toLocaleDateString();
         initializeApp();
     </script>
 </body>
