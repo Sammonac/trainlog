@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrainLog - Voice Workout Tracker</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: #2563eb;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .screen {
+            display: none;
+            flex: 1;
+            padding: 1rem;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-top: 1px solid #ddd;
+        }
+
+        .nav-tab {
+            flex: 1;
+            padding: 0.75rem;
+            text-align: center;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .nav-tab.active {
+            background: #2563eb;
+            color: white;
+        }
+
+        .record-area {
+            text-align: center;
+            margin: 2rem 0;
+        }
+
+        .record-btn {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: #dc2626;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            transition: background 0.2s;
+        }
+
+        .record-btn:hover {
+            background: #b91c1c;
+        }
+
+        .record-btn.recording {
+            background: #059669;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .text-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            margin: 1rem 0;
+        }
+
+        .text-input:focus {
+            outline: none;
+            border-color: #2563eb;
+        }
+
+        .preview-area {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            min-height: 120px;
+        }
+
+        .exercise-item {
+            margin: 0.5rem 0;
+            padding: 0.5rem;
+            background: white;
+            border-radius: 4px;
+            border-left: 4px solid #2563eb;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 1rem;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin: 0.5rem 0;
+        }
+
+        .btn:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+        }
+
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+
+        .workout-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .workout-item {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            margin: 0.5rem 0;
+            overflow: hidden;
+        }
+
+        .workout-header {
+            padding: 1rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .workout-header:hover {
+            background: #f8f9fa;
+        }
+
+        .workout-details {
+            display: none;
+            padding: 0 1rem 1rem;
+            border-top: 1px solid #e5e7eb;
+            background: #f8f9fa;
+        }
+
+        .workout-details.expanded {
+            display: block;
+        }
+
+        .exercise-detail {
+            margin: 0.5rem 0;
+            padding: 0.5rem;
+            background: white;
+            border-radius: 4px;
+        }
+
+        .set-detail {
+            font-size: 0.9rem;
+            color: #6b7280;
+            margin: 0.2rem 0;
+        }
+
+        .personal-bests {
+            background: #fef3c7;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .pb-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 0.5rem 0;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 1rem 0;
+        }
+
+        .filter-controls {
+            display: flex;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .filter-select {
+            flex: 1;
+            padding: 0.5rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #6b7280;
+            margin: 2rem 0;
+        }
+
+        .onboarding-form {
+            max-width: 350px;
+            margin: 0 auto;
+        }
+
+        .exercise-input-group {
+            margin-bottom: 1rem;
+        }
+
+        .exercise-input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #374151;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            ⚡ TrainLog
+        </div>
+
+        <!-- Onboarding Screen -->
+        <div id="onboarding-screen" class="screen">
+            <div style="text-align: center; margin: 2rem 0;">
+                <h2 style="margin-bottom: 0.5rem;">Welcome to TrainLog!</h2>
+                <p style="color: #6b7280; margin-bottom: 2rem;">Select 5 exercises you want to track</p>
+            </div>
+
+            <div class="onboarding-form">
+                <div class="exercise-input-group">
+                    <label for="exercise1">Exercise 1</label>
+                    <input type="text" id="exercise1" class="text-input" placeholder="e.g., Squat">
+                </div>
+                
+                <div class="exercise-input-group">
+                    <label for="exercise2">Exercise 2</label>
+                    <input type="text" id="exercise2" class="text-input" placeholder="e.g., Bench Press">
+                </div>
+                
+                <div class="exercise-input-group">
+                    <label for="exercise3">Exercise 3</label>
+                    <input type="text" id="exercise3" class="text-input" placeholder="e.g., Deadlift">
+                </div>
+                
+                <div class="exercise-input-group">
+                    <label for="exercise4">Exercise 4</label>
+                    <input type="text" id="exercise4" class="text-input" placeholder="e.g., Overhead Press">
+                </div>
+                
+                <div class="exercise-input-group">
+                    <label for="exercise5">Exercise 5</label>
+                    <input type="text" id="exercise5" class="text-input" placeholder="e.g., Barbell Row">
+                </div>
+
+                <button id="save-exercises-btn" class="btn" style="margin-top: 1rem;">
+                    💾 Save Exercises
+                </button>
+
+                <p style="text-align: center; color: #6b7280; font-size: 0.9rem; margin-top: 1rem;">
+                    💡 You can change your tracked exercises later in settings.
+                </p>
+            </div>
+        </div>
+
+        <!-- Voice Entry Screen -->
+        <div id="entry-screen" class="screen active">
+            <h2 style="text-align: center; margin-bottom: 1rem;">LOG WORKOUT</h2>
+            
+            <div class="record-area">
+                <button id="record-btn" class="record-btn">
+                    🎤<br>TAP TO RECORD
+                </button>
+                <p style="color: #6b7280;">Speak or type your workout...</p>
+            </div>
+
+            <textarea 
+                id="workout-input" 
+                class="text-input" 
+                placeholder="Try: 'Squats 3x10 @ 225, Bench press 3x5 @ 185, Deadlift 1x5 @ 315'"
+                rows="3"
+            ></textarea>
+
+            <div class="preview-area">
+                <h3 style="margin-bottom: 0.5rem;">PARSED WORKOUT PREVIEW:</h3>
+                <div id="workout-preview"></div>
+            </div>
+
+            <button id="save-workout-btn" class="btn">💾 SAVE WORKOUT</button>
+            <button id="clear-btn" class="btn btn-secondary">🗑️ CLEAR</button>
+
+            <p style="text-align: center; margin-top: 1rem; color: #6b7280;">
+                Today: <span id="current-date"></span>
+            </p>
+        </div>
+
+        <!-- History Screen -->
+        <div id="history-screen" class="screen">
+            <h2 style="margin-bottom: 1rem;">📝 Workout History</h2>
+            
+            <input 
+                type="text" 
+                id="search-input" 
+                class="text-input" 
+                placeholder="🔍 Search workouts..."
+            >
+
+            <div id="workout-list" class="workout-list"></div>
+        </div>
+
+        <!-- Progress Screen -->
+        <div id="progress-screen" class="screen">
+            <h2 style="margin-bottom: 1rem;">📊 Progress Dashboard</h2>
+
+            <div class="personal-bests">
+                <h3 style="margin-bottom: 0.5rem;">🏆 PERSONAL BESTS</h3>
+                <div id="personal-bests-list"></div>
+            </div>
+
+            <div class="filter-controls">
+                <select id="exercise-filter" class="filter-select">
+                    <option value="">All Exercises</option>
+                </select>
+                <select id="time-filter" class="filter-select">
+                    <option value="30">Last 30 days</option>
+                    <option value="90">Last 3 months</option>
+                    <option value="180">Last 6 months</option>
+                    <option value="365">Last year</option>
+                    <option value="all">All time</option>
+                </select>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="progress-chart"></canvas>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="nav-tabs">
+            <button class="nav-tab active" data-screen="entry">🎤<br>Record</button>
+            <button class="nav-tab" data-screen="history">📝<br>History</button>
+            <button class="nav-tab" data-screen="progress">📊<br>Progress</button>
+        </div>
+    </div>
+
+    <script>
+        // In-memory storage (replace with localStorage in production)
+        let workoutData = [];
+        let trackedExercises = [];
+        let currentChart = null;
+
+        // Check if this is first time user
+        function isFirstTimeUser() {
+            // In production, replace with: return !localStorage.getItem('trackedExercises');
+            return trackedExercises.length === 0;
+        }
+
+        // Load tracked exercises from storage
+        function loadTrackedExercises() {
+            // In production, replace with:
+            // const stored = localStorage.getItem('trackedExercises');
+            // return stored ? JSON.parse(stored) : [];
+            return trackedExercises;
+        }
+
+        // Save tracked exercises to storage
+        function saveTrackedExercises(exercises) {
+            trackedExercises = exercises;
+            // In production, add: localStorage.setItem('trackedExercises', JSON.stringify(exercises));
+        }
+
+        // Sample data for demo
+        workoutData = [
+            {
+                id: Date.now() - 7 * 24 * 60 * 60 * 1000,
+                date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+                exercises: [
+                    {
+                        name: "Squats",
+                        sets: [
+                            { reps: 10, weight: 215 },
+                            { reps: 10, weight: 215 },
+                            { reps: 8, weight: 215 }
+                        ]
+                    },
+                    {
+                        name: "Bench Press",
+                        sets: [
+                            { reps: 5, weight: 175 },
+                            { reps: 5, weight: 175 },
+                            { reps: 4, weight: 175 }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: Date.now() - 4 * 24 * 60 * 60 * 1000,
+                date: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+                exercises: [
+                    {
+                        name: "Squats",
+                        sets: [
+                            { reps: 10, weight: 220 },
+                            { reps: 10, weight: 220 },
+                            { reps: 9, weight: 220 }
+                        ]
+                    },
+                    {
+                        name: "Deadlift",
+                        sets: [
+                            { reps: 5, weight: 305 }
+                        ]
+                    }
+                ]
+            }
+        ];
+
+        // Onboarding functionality
+        document.getElementById('save-exercises-btn').addEventListener('click', saveExercisesFromOnboarding);
+
+        function saveExercisesFromOnboarding() {
+            const exercises = [];
+            
+            for (let i = 1; i <= 5; i++) {
+                const input = document.getElementById(`exercise${i}`).value.trim();
+                if (input) {
+                    exercises.push(input);
+                }
+            }
+            
+            if (exercises.length === 0) {
+                alert('Please enter at least one exercise');
+                return;
+            }
+            
+            saveTrackedExercises(exercises);
+            
+            // Hide onboarding and show main app
+            document.getElementById('onboarding-screen').classList.remove('active');
+            document.getElementById('entry-screen').classList.add('active');
+            
+            // Show navigation
+            document.querySelector('.nav-tabs').style.display = 'flex';
+            
+            // Update navigation
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.querySelector('[data-screen="entry"]').classList.add('active');
+            
+            alert(`Saved ${exercises.length} exercises successfully!`);
+        }
+
+        // App initialization
+        function initializeApp() {
+            if (isFirstTimeUser()) {
+                // Show onboarding
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                document.getElementById('onboarding-screen').classList.add('active');
+                
+                // Hide navigation during onboarding
+                document.querySelector('.nav-tabs').style.display = 'none';
+            } else {
+                // Load existing exercises and show main app
+                trackedExercises = loadTrackedExercises();
+                document.querySelector('.nav-tabs').style.display = 'flex';
+            }
+        }
+
+        // Navigation
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const screen = tab.dataset.screen;
+                showScreen(screen);
+                
+                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+            });
+        });
+
+        function showScreen(screenName) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(`${screenName}-screen`).classList.add('active');
+            
+            if (screenName === 'history') {
+                renderWorkoutHistory();
+            } else if (screenName === 'progress') {
+                renderProgressDashboard();
+            }
+        }
+
+        // Voice Entry functionality
+        document.getElementById('current-date').textContent = new Date().toLocaleDateString();
+
+        document.getElementById('workout-input').addEventListener('input', (e) => {
+            parseWorkoutInput(e.target.value);
+        });
+
+        document.getElementById('record-btn').addEventListener('click', () => {
+            const btn = document.getElementById('record-btn');
+            const input = document.getElementById('workout-input');
+            
+            if (btn.classList.contains('recording')) {
+                btn.classList.remove('recording');
+                btn.innerHTML = '🎤<br>TAP TO RECORD';
+            } else {
+                btn.classList.add('recording');
+                btn.innerHTML = '⏹️<br>RECORDING...';
+                input.focus();
+                
+                // Simulate stopping after 3 seconds
+                setTimeout(() => {
+                    btn.classList.remove('recording');
+                    btn.innerHTML = '🎤<br>TAP TO RECORD';
+                }, 3000);
+            }
+        });
+
+        document.getElementById('save-workout-btn').addEventListener('click', saveWorkout);
+        document.getElementById('clear-btn').addEventListener('click', clearWorkout);
+
+        function parseWorkoutInput(input) {
+            const preview = document.getElementById('workout-preview');
+            
+            if (!input.trim()) {
+                preview.innerHTML = '<p style="color: #6b7280;">Enter workout details above...</p>';
+                return;
+            }
+
+            const exercises = parseExercises(input);
+            
+            if (exercises.length === 0) {
+                preview.innerHTML = '<p style="color: #dc2626;">Could not parse exercises. Try format: "Exercise name 3x10 @ 225"</p>';
+                return;
+            }
+
+            preview.innerHTML = exercises.map(exercise => `
+                <div class="exercise-item">
+                    <strong>🏋️ ${exercise.name}</strong><br>
+                    ${exercise.sets.map((set, i) => `Set ${i + 1}: ${set.reps} reps @ ${set.weight} lbs`).join('<br>')}
+                </div>
+            `).join('');
+        }
+
+        function parseExercises(input) {
+            const exercises = [];
+            
+            // Split by comma to handle multiple exercises
+            const exerciseParts = input.split(',');
+            
+            for (let part of exerciseParts) {
+                part = part.trim();
+                if (!part) continue;
+                
+                // Regex patterns for different formats
+                const patterns = [
+                    /(.+?)\s+(\d+)x(\d+)\s*@\s*(\d+)/i,  // "Squats 3x10 @ 225"
+                    /(.+?)\s+(\d+)\s*sets?\s*of\s*(\d+)\s*reps?\s*at\s*(\d+)/i,  // "Bench 3 sets of 5 reps at 185"
+                    /(.+?)\s+(\d+)\s*sets?\s*(\d+)\s*reps?\s*(\d+)\s*lbs?/i,  // "Deadlift 1 set 5 reps 315 lbs"
+                ];
+                
+                let match = null;
+                for (let pattern of patterns) {
+                    match = part.match(pattern);
+                    if (match) break;
+                }
+                
+                if (match) {
+                    const [, name, sets, reps, weight] = match;
+                    const exercise = {
+                        name: name.trim(),
+                        sets: []
+                    };
+                    
+                    // Create sets array
+                    for (let i = 0; i < parseInt(sets); i++) {
+                        exercise.sets.push({
+                            reps: parseInt(reps),
+                            weight: parseInt(weight)
+                        });
+                    }
+                    
+                    exercises.push(exercise);
+                }
+            }
+            
+            return exercises;
+        }
+
+        function saveWorkout() {
+            const input = document.getElementById('workout-input').value;
+            const exercises = parseExercises(input);
+            
+            if (exercises.length === 0) {
+                alert('Please enter valid workout data');
+                return;
+            }
+            
+            const workout = {
+                id: Date.now(),
+                date: new Date().toLocaleDateString(),
+                exercises: exercises
+            };
+            
+            workoutData.unshift(workout);
+            
+            alert('Workout saved successfully!');
+            clearWorkout();
+        }
+
+        function clearWorkout() {
+            document.getElementById('workout-input').value = '';
+            document.getElementById('workout-preview').innerHTML = '<p style="color: #6b7280;">Enter workout details above...</p>';
+        }
+
+        // History functionality
+        function renderWorkoutHistory() {
+            const workoutList = document.getElementById('workout-list');
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            
+            const filteredWorkouts = workoutData.filter(workout => 
+                workout.exercises.some(ex => ex.name.toLowerCase().includes(searchTerm)) ||
+                workout.date.includes(searchTerm)
+            );
+            
+            if (filteredWorkouts.length === 0) {
+                workoutList.innerHTML = '<div class="empty-state">No workouts found</div>';
+                return;
+            }
+            
+            workoutList.innerHTML = filteredWorkouts.map(workout => `
+                <div class="workout-item">
+                    <div class="workout-header" onclick="toggleWorkoutDetails(${workout.id})">
+                        <div>
+                            <div><strong>📅 ${workout.date}</strong></div>
+                            <div style="color: #6b7280; font-size: 0.9rem;">
+                                💪 ${workout.exercises.length} exercises • ${workout.exercises.map(ex => ex.name).join(', ')}
+                            </div>
+                        </div>
+                        <div>▼</div>
+                    </div>
+                    <div class="workout-details" id="details-${workout.id}">
+                        ${workout.exercises.map(exercise => `
+                            <div class="exercise-detail">
+                                <strong>🏋️ ${exercise.name}</strong>
+                                ${exercise.sets.map((set, i) => `
+                                    <div class="set-detail">Set ${i + 1}: ${set.reps} reps @ ${set.weight} lbs</div>
+                                `).join('')}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleWorkoutDetails(workoutId) {
+            const details = document.getElementById(`details-${workoutId}`);
+            details.classList.toggle('expanded');
+        }
+
+        document.getElementById('search-input').addEventListener('input', renderWorkoutHistory);
+
+        // Progress Dashboard
+        function renderProgressDashboard() {
+            renderPersonalBests();
+            updateExerciseFilter();
+            renderProgressChart();
+        }
+
+        function renderPersonalBests() {
+            const personalBests = calculatePersonalBests();
+            const list = document.getElementById('personal-bests-list');
+            
+            if (Object.keys(personalBests).length === 0) {
+                list.innerHTML = '<div class="empty-state">No personal bests yet</div>';
+                return;
+            }
+            
+            list.innerHTML = Object.entries(personalBests).map(([exercise, best]) => `
+                <div class="pb-item">
+                    <span>🏋️ ${exercise}:</span>
+                    <span><strong>${best.weight} lbs</strong> (${best.sets}x${best.reps})</span>
+                </div>
+            `).join('');
+        }
+
+        function calculatePersonalBests() {
+            const bests = {};
+            
+            workoutData.forEach(workout => {
+                workout.exercises.forEach(exercise => {
+                    const maxWeight = Math.max(...exercise.sets.map(set => set.weight));
+                    const bestSet = exercise.sets.find(set => set.weight === maxWeight);
+                    
+                    if (!bests[exercise.name] || maxWeight > bests[exercise.name].weight) {
+                        bests[exercise.name] = {
+                            weight: maxWeight,
+                            sets: exercise.sets.length,
+                            reps: bestSet.reps
+                        };
+                    }
+                });
+            });
+            
+            return bests;
+        }
+
+        function updateExerciseFilter() {
+            const exerciseFilter = document.getElementById('exercise-filter');
+            
+            // Use tracked exercises if available, otherwise fall back to workout data
+            let exercises;
+            if (trackedExercises.length > 0) {
+                exercises = trackedExercises;
+            } else {
+                exercises = [...new Set(workoutData.flatMap(w => w.exercises.map(ex => ex.name)))];
+            }
+            
+            exerciseFilter.innerHTML = '<option value="">All Exercises</option>' + 
+                exercises.map(ex => `<option value="${ex}">${ex}</option>`).join('');
+            
+            exerciseFilter.addEventListener('change', renderProgressChart);
+            document.getElementById('time-filter').addEventListener('change', renderProgressChart);
+        }
+
+        function renderProgressChart() {
+            const exerciseFilter = document.getElementById('exercise-filter').value;
+            const timeFilter = parseInt(document.getElementById('time-filter').value);
+            
+            const chartData = prepareChartData(exerciseFilter, timeFilter);
+            
+            if (currentChart) {
+                currentChart.destroy();
+            }
+            
+            const ctx = document.getElementById('progress-chart').getContext('2d');
+            currentChart = new Chart(ctx, {
+                type: 'line',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Weight (lbs)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function prepareChartData(exerciseFilter, timeFilter) {
+            let filteredData = workoutData;
+            
+            // Filter by time
+            if (timeFilter !== 'all') {
+                const cutoffDate = new Date();
+                cutoffDate.setDate(cutoffDate.getDate() - timeFilter);
+                filteredData = filteredData.filter(workout => 
+                    new Date(workout.date) >= cutoffDate
+                );
+            }
+            
+            const datasets = [];
+            const exercises = exerciseFilter ? [exerciseFilter] : 
+                [...new Set(filteredData.flatMap(w => w.exercises.map(ex => ex.name)))];
+            
+            exercises.forEach((exerciseName, index) => {
+                const dataPoints = [];
+                
+                filteredData.forEach(workout => {
+                    const exercise = workout.exercises.find(ex => ex.name === exerciseName);
+                    if (exercise) {
+                        const maxWeight = Math.max(...exercise.sets.map(set => set.weight));
+                        dataPoints.push({
+                            x: workout.date,
+                            y: maxWeight
+                        });
+                    }
+                });
+                
+                if (dataPoints.length > 0) {
+                    datasets.push({
+                        label: exerciseName,
+                        data: dataPoints,
+                        borderColor: `hsl(${index * 137.5 % 360}, 70%, 50%)`,
+                        backgroundColor: `hsla(${index * 137.5 % 360}, 70%, 50%, 0.1)`,
+                        tension: 0.1
+                    });
+                }
+            });
+            
+            return { datasets };
+        }
+
+        // Initialize
+        parseWorkoutInput('');
+        initializeApp();
+    </script>
+</body>
+</html>
