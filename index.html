@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TrainLog - Voice Workout Tracker</title>
+    <title>Hybrid Calisthenics Tracker</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
         * {
@@ -14,927 +13,1711 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f5f5f5;
-            color: #333;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            color: #2c3e50;
             line-height: 1.6;
+            min-height: 100vh;
         }
 
-        .container {
-            max-width: 400px;
+        .app-container {
+            max-width: 500px;
             margin: 0 auto;
-            background: white;
             min-height: 100vh;
+            background: white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
             display: flex;
             flex-direction: column;
         }
 
         .header {
-            background: #2563eb;
+            background: #1a365d;
             color: white;
-            padding: 1rem;
+            padding: 20px;
             text-align: center;
-            font-size: 1.2rem;
-            font-weight: bold;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
 
-        .screen {
-            display: none;
+        .header h1 {
+            font-size: 1.5em;
+            margin-bottom: 5px;
+        }
+
+        .header .subtitle {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        .content {
             flex: 1;
-            padding: 1rem;
+            padding: 20px;
             overflow-y: auto;
         }
 
-        .screen.active {
-            display: block;
-        }
-
-        .nav-tabs {
+        .navigation {
+            background: #1a365d;
+            padding: 10px 0;
             display: flex;
-            background: #f8f9fa;
-            border-top: 1px solid #ddd;
+            justify-content: space-around;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
         }
 
-        .nav-tab {
-            flex: 1;
-            padding: 0.75rem;
-            text-align: center;
+        .nav-item {
             background: none;
             border: none;
-            cursor: pointer;
-            font-size: 0.9rem;
-        }
-
-        .nav-tab.active {
-            background: #2563eb;
             color: white;
-        }
-
-        .text-input {
-            width: 100%;
-            padding: 0.75rem;
-            border: 2px solid #e5e7eb;
+            font-size: 0.9em;
+            padding: 10px 15px;
             border-radius: 8px;
-            font-size: 1rem;
-            margin: 1rem 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
         }
 
-        .text-input:focus {
-            outline: none;
-            border-color: #2563eb;
+        .nav-item:hover {
+            background: rgba(255,255,255,0.1);
         }
 
-        .number-input {
-            width: 100%;
-            padding: 0.75rem;
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
-            font-size: 1rem;
-            text-align: center;
+        .nav-item.active {
+            background: #38a169;
         }
 
-        .number-input:focus {
-            outline: none;
-            border-color: #2563eb;
+        .nav-icon {
+            font-size: 1.2em;
         }
 
-        .btn {
-            width: 100%;
-            padding: 1rem;
-            background: #2563eb;
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+        }
+
+        .card-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #1a365d;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .button {
+            background: #38a169;
             color: white;
             border: none;
             border-radius: 8px;
-            font-size: 1rem;
-            cursor: pointer;
-            margin: 0.5rem 0;
-        }
-
-        .btn:hover {
-            background: #1d4ed8;
-        }
-
-        .btn-secondary {
-            background: #6b7280;
-        }
-
-        .btn-secondary:hover {
-            background: #4b5563;
-        }
-
-        .btn-success {
-            background: #059669;
-        }
-
-        .btn-success:hover {
-            background: #047857;
-        }
-
-        .workout-list {
-            max-height: 500px;
-            overflow-y: auto;
-        }
-
-        .workout-item {
-            background: white;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            margin: 0.5rem 0;
-            overflow: hidden;
-        }
-
-        .workout-header {
-            padding: 1rem;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .workout-header:hover {
-            background: #f8f9fa;
-        }
-
-        .workout-details {
-            display: none;
-            padding: 0 1rem 1rem;
-            border-top: 1px solid #e5e7eb;
-            background: #f8f9fa;
-        }
-
-        .workout-details.expanded {
-            display: block;
-        }
-
-        .exercise-detail {
-            margin: 0.5rem 0;
-            padding: 0.5rem;
-            background: white;
-            border-radius: 4px;
-        }
-
-        .set-detail {
-            font-size: 0.9rem;
-            color: #6b7280;
-            margin: 0.2rem 0;
-        }
-
-        .personal-bests {
-            background: #fef3c7;
-            padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 1rem;
-        }
-
-        .pb-item {
-            display: flex;
-            justify-content: space-between;
-            margin: 0.5rem 0;
-        }
-
-        .chart-container {
-            position: relative;
-            height: 300px;
-            margin: 1rem 0;
-        }
-
-        .filter-controls {
-            display: flex;
-            gap: 1rem;
-            margin: 1rem 0;
-        }
-
-        .filter-select {
-            flex: 1;
-            padding: 0.5rem;
-            border: 1px solid #e5e7eb;
-            border-radius: 4px;
-        }
-
-        .empty-state {
-            text-align: center;
-            color: #6b7280;
-            margin: 2rem 0;
-        }
-
-        .onboarding-form {
-            max-width: 350px;
-            margin: 0 auto;
-        }
-
-        .exercise-input-group {
-            margin-bottom: 1rem;
-        }
-
-        .exercise-input-group label {
-            display: block;
-            margin-bottom: 0.5rem;
+            padding: 12px 20px;
+            font-size: 1em;
             font-weight: 600;
-            color: #374151;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
         }
 
-        /* Exercise logging styles */
+        .button:hover {
+            background: #2f855a;
+            transform: translateY(-1px);
+        }
+
+        .button.secondary {
+            background: #1a365d;
+        }
+
+        .button.secondary:hover {
+            background: #2c5282;
+        }
+
+        .button:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            background: #f7fafc;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #4a5568;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .calendar-day.header {
+            background: #1a365d;
+            color: white;
+            font-size: 0.8em;
+        }
+
+        .calendar-day.workout {
+            background: #38a169;
+            color: white;
+        }
+
+        .calendar-day.today {
+            background: #1a365d;
+            color: white;
+            box-shadow: 0 0 0 3px rgba(26, 54, 93, 0.3);
+        }
+
         .exercise-card {
-            background: white;
-            border: 2px solid #e5e7eb;
-            border-radius: 12px;
-            margin: 1rem 0;
-            padding: 1.5rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #38a169;
         }
 
-        .exercise-card.completed {
-            border-color: #059669;
-            background: #f0fdf4;
+        .exercise-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+
+        .exercise-icon {
+            width: 50px;
+            height: 50px;
+            background: #1a365d;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            color: white;
+        }
+
+        .exercise-info {
+            flex: 1;
         }
 
         .exercise-name {
-            font-size: 1.2rem;
             font-weight: bold;
-            color: #1f2937;
-            margin-bottom: 1rem;
-            text-align: center;
+            color: #1a365d;
+            font-size: 1.1em;
         }
 
-        .input-row {
+        .exercise-level {
+            color: #4a5568;
+            font-size: 0.9em;
+        }
+
+        .sets-container {
             display: flex;
-            gap: 1rem;
-            margin-bottom: 1rem;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
         }
 
-        .input-group {
-            flex: 1;
+        .set-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 8px 12px;
+            background: white;
+            border-radius: 6px;
+            border: 2px solid #e2e8f0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .set-checkbox.completed {
+            background: #38a169;
+            color: white;
+            border-color: #38a169;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #38a169, #48bb78);
+            transition: width 0.3s ease;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #1a365d, #2c5282);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
             text-align: center;
         }
 
-        .input-label {
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .progression-exercise {
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+
+        .progression-header {
+            padding: 15px;
+            background: #f8f9fa;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: background 0.3s ease;
+        }
+
+        .progression-header:hover {
+            background: #e2e8f0;
+        }
+
+        .progression-content {
+            display: none;
+            padding: 15px;
+        }
+
+        .progression-content.open {
             display: block;
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: #6b7280;
-            margin-bottom: 0.5rem;
         }
 
-        .exercise-status {
-            text-align: center;
-            margin-top: 1rem;
-            font-weight: 600;
+        .level-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            background: white;
+            border: 1px solid #e2e8f0;
         }
 
-        .exercise-status.completed {
-            color: #059669;
+        .level-item.current {
+            background: #e6fffa;
+            border-color: #38a169;
         }
 
-        .exercise-status.incomplete {
-            color: #dc2626;
+        .level-item.completed {
+            background: #f0fff4;
+            border-color: #38a169;
         }
 
-        .workout-summary {
+        .level-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .level-status.completed {
+            background: #38a169;
+            color: white;
+        }
+
+        .level-status.current {
+            background: #ffd700;
+            color: #1a365d;
+        }
+
+        .level-status.locked {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+
+        .history-item {
+            padding: 15px;
+            border-left: 4px solid #38a169;
             background: #f8f9fa;
             border-radius: 8px;
-            padding: 1rem;
-            margin: 1rem 0;
+            margin-bottom: 10px;
         }
 
-        .summary-item {
-            margin: 0.5rem 0;
-            font-size: 0.9rem;
+        .history-date {
+            font-weight: bold;
+            color: #1a365d;
+            margin-bottom: 5px;
+        }
+
+        .history-exercises {
+            color: #4a5568;
+            font-size: 0.9em;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .modal-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #1a365d;
+            margin-bottom: 15px;
+        }
+
+        .modal-text {
+            color: #4a5568;
+            margin-bottom: 20px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #38a169;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            z-index: 1001;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .chart-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .chart-toggle {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #e2e8f0;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            color: #4a5568;
+            text-align: center;
+        }
+
+        .chart-toggle.active {
+            background: #1a365d;
+            color: white;
+            border-color: #1a365d;
+        }
+
+        .chart-toggle:hover:not(.active) {
+            background: #f7fafc;
+            border-color: #1a365d;
+        }
+
+        .chart-container {
+            margin-bottom: 20px;
+        }
+
+        .exercise-chart {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #38a169;
+        }
+
+        .exercise-chart-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            font-weight: bold;
+            color: #1a365d;
+        }
+
+        .exercise-chart canvas {
+            max-height: 250px;
+        }
+
+        .chart-tooltip {
+            background: rgba(26, 54, 93, 0.9);
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .progression-target {
+            font-size: 0.85em;
+            color: #4a5568;
+            margin-top: 5px;
+            font-style: italic;
+            line-height: 1.4;
+        }
+
+        .level-target {
+            font-size: 0.8em;
+            color: #38a169;
+            margin-top: 2px;
+        }
+
+        @media (max-width: 480px) {
+            .app-container {
+                max-width: 100%;
+            }
+            
+            .content {
+                padding: 15px;
+            }
+            
+            .stat-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .exercise-chart canvas {
+                max-height: 200px;
+            }
+
+            .chart-controls {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="app-container">
         <div class="header">
-            ⚡ TrainLog
+            <h1>Hybrid Calisthenics</h1>
+            <div class="subtitle">Progressive Bodyweight Training</div>
         </div>
 
-        <!-- Onboarding Screen -->
-        <div id="onboarding-screen" class="screen">
-            <div style="text-align: center; margin: 2rem 0;">
-                <h2 style="margin-bottom: 0.5rem;">Welcome to TrainLog!</h2>
-                <p style="color: #6b7280; margin-bottom: 2rem;">Select 5 exercises you want to track</p>
+        <div class="content">
+            <!-- HOME PAGE -->
+            <div class="page active" id="home-page">
+                <div class="card">
+                    <div class="card-title">
+                        📅 This Week
+                    </div>
+                    <div class="calendar-grid" id="weekly-calendar">
+                        <!-- Calendar will be generated by JavaScript -->
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">
+                        💪 Today's Routine
+                    </div>
+                    <div id="today-routine">
+                        <!-- Today's exercises will be shown here -->
+                    </div>
+                </div>
+
+                <button class="button" onclick="goToWorkout()">START WORKOUT</button>
+                <button class="button secondary" onclick="showPage('progression-page')">VIEW PROGRESS</button>
+                <button class="button secondary" onclick="showPage('history-page')">VIEW HISTORY</button>
             </div>
 
-            <div class="onboarding-form">
-                <div class="exercise-input-group">
-                    <label for="exercise1">Exercise 1</label>
-                    <input type="text" id="exercise1" class="text-input" placeholder="e.g., Squat">
-                </div>
-                
-                <div class="exercise-input-group">
-                    <label for="exercise2">Exercise 2</label>
-                    <input type="text" id="exercise2" class="text-input" placeholder="e.g., Bench Press">
-                </div>
-                
-                <div class="exercise-input-group">
-                    <label for="exercise3">Exercise 3</label>
-                    <input type="text" id="exercise3" class="text-input" placeholder="e.g., Deadlift">
-                </div>
-                
-                <div class="exercise-input-group">
-                    <label for="exercise4">Exercise 4</label>
-                    <input type="text" id="exercise4" class="text-input" placeholder="e.g., Overhead Press">
-                </div>
-                
-                <div class="exercise-input-group">
-                    <label for="exercise5">Exercise 5</label>
-                    <input type="text" id="exercise5" class="text-input" placeholder="e.g., Barbell Row">
+            <!-- WORKOUT PAGE -->
+            <div class="page" id="workout-page">
+                <div class="card">
+                    <div class="card-title">
+                        🏋️ Today's Workout
+                    </div>
+                    <div id="workout-date"></div>
                 </div>
 
-                <button id="save-exercises-btn" class="btn" style="margin-top: 1rem;">
-                    💾 Save Exercises
-                </button>
+                <div id="workout-exercises">
+                    <!-- Workout exercises will be generated here -->
+                </div>
 
-                <p style="text-align: center; color: #6b7280; font-size: 0.9rem; margin-top: 1rem;">
-                    💡 You can change your tracked exercises later in settings.
-                </p>
+                <button class="button" id="complete-workout-btn" onclick="completeWorkout()">COMPLETE WORKOUT</button>
+                <button class="button secondary" onclick="showPage('home-page')">BACK TO HOME</button>
+            </div>
+
+            <!-- PROGRESSION PAGE -->
+            <div class="page" id="progression-page">
+                <div class="card">
+                    <div class="card-title">
+                        📈 Exercise Progressions
+                    </div>
+                    <div id="progression-list">
+                        <!-- Progression items will be generated here -->
+                    </div>
+                </div>
+                <button class="button secondary" onclick="showPage('home-page')">BACK TO HOME</button>
+            </div>
+
+            <!-- HISTORY PAGE -->
+            <div class="page" id="history-page">
+                <div class="stat-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="total-workouts">0</div>
+                        <div class="stat-label">Total Workouts</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="current-streak">0</div>
+                        <div class="stat-label">Current Streak</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="highest-level">1</div>
+                        <div class="stat-label">Highest Level</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="total-levels">0</div>
+                        <div class="stat-label">Levels Gained</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">
+                        📈 Progression Charts
+                    </div>
+                    <div class="chart-controls">
+                        <button class="chart-toggle active" onclick="toggleChartView('individual')">Chart by Exercise</button>
+                        <button class="chart-toggle" onclick="toggleChartView('combined')">All Progressions</button>
+                    </div>
+                    
+                    <div id="individual-charts" class="chart-container">
+                        <!-- Individual exercise charts will be generated here -->
+                    </div>
+                    
+                    <div id="combined-chart" class="chart-container" style="display: none;">
+                        <canvas id="combined-progression-chart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">
+                        📊 Recent Workouts
+                    </div>
+                    <div id="history-list">
+                        <!-- History items will be generated here -->
+                    </div>
+                </div>
+
+                <button class="button secondary" onclick="showPage('home-page')">BACK TO HOME</button>
             </div>
         </div>
 
-        <!-- Exercise Logging Screen -->
-        <div id="logging-screen" class="screen active">
-            <h2 style="text-align: center; margin-bottom: 1rem;">📝 LOG WORKOUT</h2>
-            
-            <p style="text-align: center; margin-bottom: 1rem; color: #6b7280;">
-                Today: <span id="current-date"></span>
-            </p>
-
-            <div id="exercises-container"></div>
-
-            <div class="workout-summary" id="workout-summary" style="display: none;">
-                <h3 style="margin-bottom: 0.5rem;">📋 Workout Summary</h3>
-                <div id="summary-content"></div>
-            </div>
-
-            <button id="save-workout-btn" class="btn btn-success" style="display: none;">
-                💾 SAVE WORKOUT
+        <div class="navigation">
+            <button class="nav-item active" onclick="showPage('home-page')">
+                <div class="nav-icon">🏠</div>
+                <div>Home</div>
             </button>
-            
-            <button id="clear-workout-btn" class="btn btn-secondary">
-                🗑️ CLEAR ALL
+            <button class="nav-item" onclick="goToWorkout()">
+                <div class="nav-icon">💪</div>
+                <div>Workout</div>
             </button>
-        </div>
-
-        <!-- History Screen -->
-        <div id="history-screen" class="screen">
-            <h2 style="margin-bottom: 1rem;">📝 Workout History</h2>
-            
-            <input 
-                type="text" 
-                id="search-input" 
-                class="text-input" 
-                placeholder="🔍 Search workouts..."
-            >
-
-            <div id="workout-list" class="workout-list"></div>
-        </div>
-
-        <!-- Progress Screen -->
-        <div id="progress-screen" class="screen">
-            <h2 style="margin-bottom: 1rem;">📊 Progress Dashboard</h2>
-
-            <div class="personal-bests">
-                <h3 style="margin-bottom: 0.5rem;">🏆 PERSONAL BESTS</h3>
-                <div id="personal-bests-list"></div>
-            </div>
-
-            <div class="filter-controls">
-                <select id="exercise-filter" class="filter-select">
-                    <option value="">All Exercises</option>
-                </select>
-                <select id="time-filter" class="filter-select">
-                    <option value="30">Last 30 days</option>
-                    <option value="90">Last 3 months</option>
-                    <option value="180">Last 6 months</option>
-                    <option value="365">Last year</option>
-                    <option value="all">All time</option>
-                </select>
-            </div>
-
-            <div class="chart-container">
-                <canvas id="progress-chart"></canvas>
-            </div>
-        </div>
-
-        <!-- Navigation -->
-        <div class="nav-tabs">
-            <button class="nav-tab active" data-screen="logging">📝<br>Log</button>
-            <button class="nav-tab" data-screen="history">📚<br>History</button>
-            <button class="nav-tab" data-screen="progress">📊<br>Progress</button>
+            <button class="nav-item" onclick="showPage('progression-page')">
+                <div class="nav-icon">📈</div>
+                <div>Progress</div>
+            </button>
+            <button class="nav-item" onclick="showPage('history-page')">
+                <div class="nav-icon">📊</div>
+                <div>History</div>
+            </button>
         </div>
     </div>
 
+    <!-- Modal for progression advancement -->
+    <div class="modal" id="advancement-modal">
+        <div class="modal-content">
+            <div class="modal-title">🎉 Level Up!</div>
+            <div class="modal-text" id="advancement-text"></div>
+            <div class="modal-buttons">
+                <button class="button secondary" onclick="closeModal()">Cancel</button>
+                <button class="button" onclick="confirmAdvancement()">Advance</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast notifications -->
+    <div class="toast" id="toast"></div>
+
     <script>
-        // In-memory storage (replace with localStorage in production)
-        let workoutData = [];
-        let trackedExercises = [];
-        let currentChart = null;
-        let currentWorkout = {};
-
-        // Check if this is first time user
-        function isFirstTimeUser() {
-            return trackedExercises.length === 0;
-        }
-
-        // Load tracked exercises from storage
-        function loadTrackedExercises() {
-            return trackedExercises;
-        }
-
-        // Save tracked exercises to storage
-        function saveTrackedExercises(exercises) {
-            trackedExercises = exercises;
-        }
-
-        // Sample data for demo
-        workoutData = [
-            {
-                id: Date.now() - 7 * 24 * 60 * 60 * 1000,
-                date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-                exercises: [
-                    {
-                        name: "Squats",
-                        sets: [
-                            { reps: 10, weight: 215 },
-                            { reps: 10, weight: 215 },
-                            { reps: 8, weight: 215 }
-                        ]
-                    },
-                    {
-                        name: "Bench Press",
-                        sets: [
-                            { reps: 5, weight: 175 },
-                            { reps: 5, weight: 175 },
-                            { reps: 4, weight: 175 }
-                        ]
-                    }
-                ]
+        // Exercise data with exact progression targets as specified
+        const EXERCISES = {
+            pushups: {
+                name: "Push-ups",
+                icon: "💪",
+                levels: [
+                    "Wall Push-ups",
+                    "Incline Push-ups", 
+                    "Knee Push-ups",
+                    "Full Push-ups",
+                    "Close Push-ups",
+                    "Uneven Push-ups",
+                    "One-arm Wall Push-ups",
+                    "Half One-arm Push-ups",
+                    "Negative One-arm Push-ups",
+                    "Full One-arm Push-ups"
+                ],
+                targets: [50, 40, 35, 30, 25, 20, 15, 12, 10, 5]
             },
-            {
-                id: Date.now() - 4 * 24 * 60 * 60 * 1000,
-                date: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-                exercises: [
-                    {
-                        name: "Squats",
-                        sets: [
-                            { reps: 10, weight: 220 },
-                            { reps: 10, weight: 220 },
-                            { reps: 9, weight: 220 }
-                        ]
-                    },
-                    {
-                        name: "Deadlift",
-                        sets: [
-                            { reps: 5, weight: 305 }
-                        ]
-                    }
-                ]
+            pullups: {
+                name: "Pull-ups",
+                icon: "🎯",
+                levels: [
+                    "Dead Hang",
+                    "Active Hang",
+                    "Scapular Pulls",
+                    "Negative Pull-ups",
+                    "Australian Pull-ups",
+                    "Chin-ups",
+                    "Full Pull-ups",
+                    "Close-grip Pull-ups",
+                    "One-arm Assisted Pull-ups",
+                    "One-arm Pull-ups"
+                ],
+                targets: ["30 sec", "30 sec", 10, 5, 10, 8, 6, 5, 4, 1]
+            },
+            squats: {
+                name: "Squats",
+                icon: "🏋️",
+                levels: [
+                    "Chair-assisted Squats",
+                    "Half Squats",
+                    "Full Bodyweight Squats",
+                    "Deep Squats",
+                    "Narrow Squats",
+                    "Uneven Squats",
+                    "Assisted Pistols",
+                    "Negative Pistols",
+                    "Close-stance Pistols",
+                    "Full Pistols"
+                ],
+                targets: [50, 40, 30, 25, 20, 15, 12, 10, 8, 5]
+            },
+            legraises: {
+                name: "Leg Raises",
+                icon: "🦵",
+                levels: [
+                    "Bent Knee Raises",
+                    "Straight Leg Raises",
+                    "Reverse Crunches",
+                    "Hanging Knee Raises",
+                    "Hanging Leg Raises",
+                    "V-ups",
+                    "L-sits",
+                    "Hanging L-sits",
+                    "L-raise to vertical",
+                    "Toes-to-bar"
+                ],
+                targets: [25, 20, 15, 12, 10, 8, "10 sec", "10 sec", 6, 5]
+            },
+            bridges: {
+                name: "Bridges",
+                icon: "🌉",
+                levels: [
+                    "Shoulder Bridge",
+                    "Glute Bridge",
+                    "Straight Bridge",
+                    "Table Bridge",
+                    "Half Wheel",
+                    "Full Wheel",
+                    "Wall Walk",
+                    "Bridge Push-ups",
+                    "Bridge from Standing (assisted)",
+                    "Full Stand-to-Stand Bridge"
+                ],
+                targets: [20, 20, 15, 12, 10, 8, 6, 5, 3, 1]
+            },
+            twists: {
+                name: "Twists",
+                icon: "🌀",
+                levels: [
+                    "Seated Twists",
+                    "Russian Twists",
+                    "Side Sit-ups",
+                    "Side Plank Raises",
+                    "Standing Twists",
+                    "Standing Twists with Resistance",
+                    "Hanging Side Raises",
+                    "Windshield Wipers",
+                    "Advanced Hanging Wipers",
+                    "Dragon Flags"
+                ],
+                targets: [30, 25, 20, 15, 20, 15, 10, 8, 6, 3]
             }
-        ];
+        };
 
-        // Onboarding functionality
-        document.getElementById('save-exercises-btn').addEventListener('click', saveExercisesFromOnboarding);
+        // Default workout schedule (Monday = 1, Sunday = 0)
+        const WORKOUT_SCHEDULE = {
+            1: ['pushups', 'pullups'],      // Monday
+            2: ['squats', 'legraises'],     // Tuesday
+            3: ['bridges', 'twists'],       // Wednesday
+            4: ['pushups', 'legraises'],    // Thursday
+            5: ['pullups', 'squats'],       // Friday
+            6: [],                          // Saturday - rest
+            0: []                           // Sunday - rest
+        };
 
-        function saveExercisesFromOnboarding() {
-            const exercises = [];
-            
-            for (let i = 1; i <= 5; i++) {
-                const input = document.getElementById(`exercise${i}`).value.trim();
-                if (input) {
-                    exercises.push(input);
+        // Global variables
+        let userData = {
+            levels: {},
+            workoutHistory: [],
+            currentWorkout: null,
+            progressionHistory: [],
+            repsCompleted: {} // Track reps completed for each exercise level
+        };
+
+        let currentAdvancementExercise = null;
+        let currentChartView = 'individual';
+        let exerciseCharts = {};
+
+        // Initialize app
+        function init() {
+            loadUserData();
+            initializeDefaultLevels();
+            renderHome();
+            renderProgression();
+            renderHistory();
+        }
+
+        // Data management
+        function loadUserData() {
+            const saved = JSON.parse(localStorage.getItem('hybridCalisthenicsData') || '{}');
+            userData = {
+                levels: saved.levels || {},
+                workoutHistory: saved.workoutHistory || [],
+                currentWorkout: saved.currentWorkout || null,
+                progressionHistory: saved.progressionHistory || [],
+                repsCompleted: saved.repsCompleted || {}
+            };
+        }
+
+        function saveUserData() {
+            // Note: In Claude.ai environment, localStorage is not supported
+            // In a real app, you would use:
+            // localStorage.setItem('hybridCalisthenicsData', JSON.stringify(userData));
+            console.log('Data would be saved:', userData);
+        }
+
+        function initializeDefaultLevels() {
+            Object.keys(EXERCISES).forEach(exerciseKey => {
+                if (!userData.levels[exerciseKey]) {
+                    userData.levels[exerciseKey] = 0; // Start at level 0
                 }
-            }
-            
-            if (exercises.length === 0) {
-                alert('Please enter at least one exercise');
-                return;
-            }
-            
-            saveTrackedExercises(exercises);
-            
-            // Initialize logging screen
-            initializeLoggingScreen();
-            
-            // Hide onboarding and show logging screen
-            document.getElementById('onboarding-screen').classList.remove('active');
-            document.getElementById('logging-screen').classList.add('active');
-            
-            // Show navigation
-            document.querySelector('.nav-tabs').style.display = 'flex';
-            
-            // Update navigation
-            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-            document.querySelector('[data-screen="logging"]').classList.add('active');
-            
-            alert(`Saved ${exercises.length} exercises successfully!`);
-        }
-
-        // App initialization
-        function initializeApp() {
-            if (isFirstTimeUser()) {
-                // Show onboarding
-                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-                document.getElementById('onboarding-screen').classList.add('active');
-                
-                // Hide navigation during onboarding
-                document.querySelector('.nav-tabs').style.display = 'none';
-            } else {
-                // Load existing exercises and show main app
-                trackedExercises = loadTrackedExercises();
-                initializeLoggingScreen();
-                document.querySelector('.nav-tabs').style.display = 'flex';
-            }
-        }
-
-        // Initialize logging screen
-        function initializeLoggingScreen() {
-            const container = document.getElementById('exercises-container');
-            currentWorkout = {};
-            
-            container.innerHTML = trackedExercises.map(exercise => `
-                <div class="exercise-card" id="card-${exercise.replace(/\s+/g, '-').toLowerCase()}">
-                    <div class="exercise-name">🏋️ ${exercise}</div>
-                    
-                    <div class="input-row">
-                        <div class="input-group">
-                            <label class="input-label">Sets</label>
-                            <input 
-                                type="number" 
-                                class="number-input" 
-                                id="sets-${exercise.replace(/\s+/g, '-').toLowerCase()}"
-                                min="1" 
-                                max="10" 
-                                placeholder="3"
-                                onchange="updateExercise('${exercise}')"
-                            >
-                        </div>
-                        
-                        <div class="input-group">
-                            <label class="input-label">Reps</label>
-                            <input 
-                                type="number" 
-                                class="number-input" 
-                                id="reps-${exercise.replace(/\s+/g, '-').toLowerCase()}"
-                                min="1" 
-                                max="50" 
-                                placeholder="10"
-                                onchange="updateExercise('${exercise}')"
-                            >
-                        </div>
-                        
-                        <div class="input-group">
-                            <label class="input-label">Weight (lbs)</label>
-                            <input 
-                                type="number" 
-                                class="number-input" 
-                                id="weight-${exercise.replace(/\s+/g, '-').toLowerCase()}"
-                                min="0" 
-                                step="5" 
-                                placeholder="225"
-                                onchange="updateExercise('${exercise}')"
-                            >
-                        </div>
-                    </div>
-                    
-                    <div class="exercise-status incomplete" id="status-${exercise.replace(/\s+/g, '-').toLowerCase()}">
-                        ⚪ Not logged yet
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        // Update exercise data
-        function updateExercise(exerciseName) {
-            const exerciseId = exerciseName.replace(/\s+/g, '-').toLowerCase();
-            const sets = parseInt(document.getElementById(`sets-${exerciseId}`).value) || 0;
-            const reps = parseInt(document.getElementById(`reps-${exerciseId}`).value) || 0;
-            const weight = parseInt(document.getElementById(`weight-${exerciseId}`).value) || 0;
-            
-            if (sets > 0 && reps > 0 && weight > 0) {
-                // Create sets array
-                const setsArray = [];
-                for (let i = 0; i < sets; i++) {
-                    setsArray.push({ reps: reps, weight: weight });
+                if (!userData.repsCompleted[exerciseKey]) {
+                    userData.repsCompleted[exerciseKey] = {};
                 }
-                
-                currentWorkout[exerciseName] = {
-                    name: exerciseName,
-                    sets: setsArray
-                };
-                
-                // Update UI
-                const card = document.getElementById(`card-${exerciseId}`);
-                const status = document.getElementById(`status-${exerciseId}`);
-                
-                card.classList.add('completed');
-                status.classList.remove('incomplete');
-                status.classList.add('completed');
-                status.innerHTML = `✅ ${sets} sets × ${reps} reps @ ${weight} lbs`;
-            } else {
-                // Remove from current workout
-                delete currentWorkout[exerciseName];
-                
-                // Update UI
-                const card = document.getElementById(`card-${exerciseId}`);
-                const status = document.getElementById(`status-${exerciseId}`);
-                
-                card.classList.remove('completed');
-                status.classList.remove('completed');
-                status.classList.add('incomplete');
-                status.innerHTML = '⚪ Not logged yet';
-            }
-            
-            updateWorkoutSummary();
-        }
-
-        // Update workout summary
-        function updateWorkoutSummary() {
-            const summary = document.getElementById('workout-summary');
-            const content = document.getElementById('summary-content');
-            const saveBtn = document.getElementById('save-workout-btn');
-            
-            const exerciseCount = Object.keys(currentWorkout).length;
-            
-            if (exerciseCount > 0) {
-                summary.style.display = 'block';
-                saveBtn.style.display = 'block';
-                
-                content.innerHTML = Object.values(currentWorkout).map(exercise => `
-                    <div class="summary-item">
-                        <strong>${exercise.name}:</strong> ${exercise.sets.length} sets × ${exercise.sets[0].reps} reps @ ${exercise.sets[0].weight} lbs
-                    </div>
-                `).join('');
-            } else {
-                summary.style.display = 'none';
-                saveBtn.style.display = 'none';
-            }
+            });
+            saveUserData();
         }
 
         // Navigation
-        document.querySelectorAll('.nav-tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                const screen = tab.dataset.screen;
-                showScreen(screen);
-                
-                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
+        function showPage(pageId) {
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
             });
-        });
-
-        function showScreen(screenName) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(`${screenName}-screen`).classList.add('active');
             
-            if (screenName === 'history') {
-                renderWorkoutHistory();
-            } else if (screenName === 'progress') {
-                renderProgressDashboard();
-            }
+            // Show target page
+            document.getElementById(pageId).classList.add('active');
+            
+            // Update navigation
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Find and activate corresponding nav item
+            const navItems = document.querySelectorAll('.nav-item');
+            if (pageId === 'home-page') navItems[0].classList.add('active');
+            else if (pageId === 'workout-page') navItems[1].classList.add('active');
+            else if (pageId === 'progression-page') navItems[2].classList.add('active');
+            else if (pageId === 'history-page') navItems[3].classList.add('active');
+            
+            // Refresh content
+            if (pageId === 'home-page') renderHome();
+            else if (pageId === 'workout-page') renderWorkout();
+            else if (pageId === 'progression-page') renderProgression();
+            else if (pageId === 'history-page') renderHistory();
         }
 
-        // Save workout
-        document.getElementById('save-workout-btn').addEventListener('click', saveWorkout);
-        document.getElementById('clear-workout-btn').addEventListener('click', clearWorkout);
-
-        function saveWorkout() {
-            if (Object.keys(currentWorkout).length === 0) {
-                alert('Please log at least one exercise');
+        function goToWorkout() {
+            const today = new Date().getDay();
+            const todayExercises = WORKOUT_SCHEDULE[today] || [];
+            
+            if (todayExercises.length === 0) {
+                showToast("Today is a rest day! Take some time to recover.");
                 return;
             }
             
-            const workout = {
-                id: Date.now(),
-                date: new Date().toLocaleDateString(),
-                exercises: Object.values(currentWorkout)
-            };
-            
-            workoutData.unshift(workout);
-            
-            alert('Workout saved successfully!');
-            clearWorkout();
-        }
-
-        function clearWorkout() {
-            currentWorkout = {};
-            
-            // Clear all inputs
-            trackedExercises.forEach(exercise => {
-                const exerciseId = exercise.replace(/\s+/g, '-').toLowerCase();
-                document.getElementById(`sets-${exerciseId}`).value = '';
-                document.getElementById(`reps-${exerciseId}`).value = '';
-                document.getElementById(`weight-${exerciseId}`).value = '';
-                
-                // Reset UI
-                const card = document.getElementById(`card-${exerciseId}`);
-                const status = document.getElementById(`status-${exerciseId}`);
-                
-                card.classList.remove('completed');
-                status.classList.remove('completed');
-                status.classList.add('incomplete');
-                status.innerHTML = '⚪ Not logged yet';
-            });
-            
-            updateWorkoutSummary();
-        }
-
-        // History functionality
-        function renderWorkoutHistory() {
-            const workoutList = document.getElementById('workout-list');
-            const searchTerm = document.getElementById('search-input').value.toLowerCase();
-            
-            const filteredWorkouts = workoutData.filter(workout => 
-                workout.exercises.some(ex => ex.name.toLowerCase().includes(searchTerm)) ||
-                workout.date.includes(searchTerm)
+            // Check if already completed today
+            const todayString = new Date().toDateString();
+            const alreadyCompleted = userData.workoutHistory.some(workout => 
+                new Date(workout.date).toDateString() === todayString
             );
             
-            if (filteredWorkouts.length === 0) {
-                workoutList.innerHTML = '<div class="empty-state">No workouts found</div>';
+            if (alreadyCompleted) {
+                showToast("You've already completed today's workout!");
                 return;
             }
             
-            workoutList.innerHTML = filteredWorkouts.map(workout => `
-                <div class="workout-item">
-                    <div class="workout-header" onclick="toggleWorkoutDetails(${workout.id})">
-                        <div>
-                            <div><strong>📅 ${workout.date}</strong></div>
-                            <div style="color: #6b7280; font-size: 0.9rem;">
-                                💪 ${workout.exercises.length} exercises • ${workout.exercises.map(ex => ex.name).join(', ')}
-                            </div>
-                        </div>
-                        <div>▼</div>
-                    </div>
-                    <div class="workout-details" id="details-${workout.id}">
-                        ${workout.exercises.map(exercise => `
-                            <div class="exercise-detail">
-                                <strong>🏋️ ${exercise.name}</strong>
-                                ${exercise.sets.map((set, i) => `
-                                    <div class="set-detail">Set ${i + 1}: ${set.reps} reps @ ${set.weight} lbs</div>
-                                `).join('')}
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `).join('');
+            showPage('workout-page');
         }
 
-        function toggleWorkoutDetails(workoutId) {
-            const details = document.getElementById(`details-${workoutId}`);
-            details.classList.toggle('expanded');
+        // Home page rendering
+        function renderHome() {
+            renderWeeklyCalendar();
+            renderTodayRoutine();
         }
 
-        document.getElementById('search-input').addEventListener('input', renderWorkoutHistory);
-
-        // Progress Dashboard
-        function renderProgressDashboard() {
-            renderPersonalBests();
-            updateExerciseFilter();
-            renderProgressChart();
-        }
-
-        function renderPersonalBests() {
-            const personalBests = calculatePersonalBests();
-            const list = document.getElementById('personal-bests-list');
+        function renderWeeklyCalendar() {
+            const container = document.getElementById('weekly-calendar');
+            const today = new Date();
+            const currentWeekStart = new Date(today);
+            currentWeekStart.setDate(today.getDate() - today.getDay() + 1); // Start from Monday
             
-            if (Object.keys(personalBests).length === 0) {
-                list.innerHTML = '<div class="empty-state">No personal bests yet</div>';
-                return;
-            }
+            const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+            let html = '';
             
-            list.innerHTML = Object.entries(personalBests).map(([exercise, best]) => `
-                <div class="pb-item">
-                    <span>🏋️ ${exercise}:</span>
-                    <span><strong>${best.weight} lbs</strong> (${best.sets}x${best.reps})</span>
-                </div>
-            `).join('');
-        }
-
-        function calculatePersonalBests() {
-            const bests = {};
-            
-            workoutData.forEach(workout => {
-                workout.exercises.forEach(exercise => {
-                    const maxWeight = Math.max(...exercise.sets.map(set => set.weight));
-                    const bestSet = exercise.sets.find(set => set.weight === maxWeight);
-                    
-                    if (!bests[exercise.name] || maxWeight > bests[exercise.name].weight) {
-                        bests[exercise.name] = {
-                            weight: maxWeight,
-                            sets: exercise.sets.length,
-                            reps: bestSet.reps
-                        };
-                    }
-                });
+            // Add headers
+            days.forEach(day => {
+                html += `<div class="calendar-day header">${day}</div>`;
             });
             
-            return bests;
+            // Add dates
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(currentWeekStart);
+                date.setDate(currentWeekStart.getDate() + i);
+                
+                const dateString = date.toDateString();
+                const isToday = date.toDateString() === today.toDateString();
+                const hasWorkout = userData.workoutHistory.some(workout => 
+                    new Date(workout.date).toDateString() === dateString
+                );
+                
+                let classes = 'calendar-day';
+                if (isToday) classes += ' today';
+                else if (hasWorkout) classes += ' workout';
+                
+                html += `<div class="${classes}">${date.getDate()}</div>`;
+            }
+            
+            container.innerHTML = html;
         }
 
-        function updateExerciseFilter() {
-            const exerciseFilter = document.getElementById('exercise-filter');
+        function renderTodayRoutine() {
+            const container = document.getElementById('today-routine');
+            const today = new Date().getDay();
+            const todayExercises = WORKOUT_SCHEDULE[today] || [];
             
-            // Use tracked exercises if available, otherwise fall back to workout data
-            let exercises;
-            if (trackedExercises.length > 0) {
-                exercises = trackedExercises;
+            if (todayExercises.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: #4a5568; padding: 20px;">Today is a rest day! 🌱</div>';
+                return;
+            }
+            
+            let html = '';
+            todayExercises.forEach(exerciseKey => {
+                const exercise = EXERCISES[exerciseKey];
+                const currentLevel = userData.levels[exerciseKey];
+                const levelName = exercise.levels[currentLevel];
+                const target = exercise.targets[currentLevel];
+                
+                html += `
+                    <div class="exercise-card">
+                        <div class="exercise-header">
+                            <div class="exercise-icon">${exercise.icon}</div>
+                            <div class="exercise-info">
+                                <div class="exercise-name">${exercise.name}</div>
+                                <div class="exercise-level">Level ${currentLevel + 1}: ${levelName}</div>
+                                <div class="level-target">Target: ${target} ${typeof target === 'string' ? '' : 'reps'}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        // Workout page rendering
+        function renderWorkout() {
+            const today = new Date().getDay();
+            const todayExercises = WORKOUT_SCHEDULE[today] || [];
+            
+            document.getElementById('workout-date').innerHTML = `
+                <div style="text-align: center; color: #4a5568; margin-bottom: 15px;">
+                    ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                </div>
+            `;
+            
+            if (todayExercises.length === 0) {
+                document.getElementById('workout-exercises').innerHTML = 
+                    '<div style="text-align: center; color: #4a5568; padding: 40px;">Today is a rest day!</div>';
+                return;
+            }
+            
+            // Initialize current workout
+            userData.currentWorkout = {
+                date: new Date().toISOString(),
+                exercises: {}
+            };
+            
+            todayExercises.forEach(exerciseKey => {
+                userData.currentWorkout.exercises[exerciseKey] = {
+                    level: userData.levels[exerciseKey],
+                    targetSets: getTargetSets(exerciseKey, userData.levels[exerciseKey]),
+                    completedSets: [],
+                    repsPerSet: Math.ceil(EXERCISES[exerciseKey].targets[userData.levels[exerciseKey]] / getTargetSets(exerciseKey, userData.levels[exerciseKey]))
+                };
+            });
+            
+            renderWorkoutExercises();
+        }
+
+        function renderWorkoutExercises() {
+            const container = document.getElementById('workout-exercises');
+            const currentWorkout = userData.currentWorkout;
+            
+            let html = '';
+            Object.keys(currentWorkout.exercises).forEach(exerciseKey => {
+                const exercise = EXERCISES[exerciseKey];
+                const workoutExercise = currentWorkout.exercises[exerciseKey];
+                const levelName = exercise.levels[workoutExercise.level];
+                const target = exercise.targets[workoutExercise.level];
+                
+                html += `
+                    <div class="card">
+                        <div class="exercise-header">
+                            <div class="exercise-icon">${exercise.icon}</div>
+                            <div class="exercise-info">
+                                <div class="exercise-name">${exercise.name}</div>
+                                <div class="exercise-level">Level ${workoutExercise.level + 1}: ${levelName}</div>
+                                <div class="level-target">Target: ${target} ${typeof target === 'string' ? '' : 'reps total'}</div>
+                            </div>
+                        </div>
+                        <div class="sets-container">
+                            ${Array.from({length: workoutExercise.targetSets}, (_, i) => 
+                                `<div class="set-checkbox ${workoutExercise.completedSets.includes(i) ? 'completed' : ''}" 
+                                      onclick="toggleSet('${exerciseKey}', ${i})">
+                                    Set ${i + 1}
+                                 </div>`
+                            ).join('')}
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${(workoutExercise.completedSets.length / workoutExercise.targetSets) * 100}%"></div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            updateCompleteButton();
+        }
+
+        function getTargetSets(exerciseKey, level) {
+            // Progressive set count based on level
+            return Math.min(3 + Math.floor(level / 3), 5);
+        }
+
+        function toggleSet(exerciseKey, setIndex) {
+            const workoutExercise = userData.currentWorkout.exercises[exerciseKey];
+            const setCompleted = workoutExercise.completedSets.includes(setIndex);
+            
+            if (setCompleted) {
+                workoutExercise.completedSets = workoutExercise.completedSets.filter(i => i !== setIndex);
             } else {
-                exercises = [...new Set(workoutData.flatMap(w => w.exercises.map(ex => ex.name)))];
+                workoutExercise.completedSets.push(setIndex);
             }
             
-            exerciseFilter.innerHTML = '<option value="">All Exercises</option>' + 
-                exercises.map(ex => `<option value="${ex}">${ex}</option>`).join('');
-            
-            exerciseFilter.addEventListener('change', renderProgressChart);
-            document.getElementById('time-filter').addEventListener('change', renderProgressChart);
+            renderWorkoutExercises();
         }
 
-        function renderProgressChart() {
-            const exerciseFilter = document.getElementById('exercise-filter').value;
-            const timeFilter = parseInt(document.getElementById('time-filter').value);
+        function updateCompleteButton() {
+            const button = document.getElementById('complete-workout-btn');
+            const currentWorkout = userData.currentWorkout;
             
-            const chartData = prepareChartData(exerciseFilter, timeFilter);
+            let allCompleted = true;
+            Object.values(currentWorkout.exercises).forEach(exercise => {
+                if (exercise.completedSets.length < exercise.targetSets) {
+                    allCompleted = false;
+                }
+            });
             
-            if (currentChart) {
-                currentChart.destroy();
+            button.disabled = !allCompleted;
+            button.textContent = allCompleted ? 'COMPLETE WORKOUT' : 'FINISH ALL SETS FIRST';
+        }
+
+        function completeWorkout() {
+            // Add to history with current levels and reps completed
+            const workoutRecord = {
+                date: userData.currentWorkout.date,
+                exercises: Object.keys(userData.currentWorkout.exercises).map(key => {
+                    const exercise = userData.currentWorkout.exercises[key];
+                    const targetReps = EXERCISES[key].targets[exercise.level];
+                    const completedReps = exercise.completedSets.length * exercise.repsPerSet;
+                    
+                    // Store reps completed for this level
+                    if (!userData.repsCompleted[key][exercise.level]) {
+                        userData.repsCompleted[key][exercise.level] = [];
+                    }
+                    userData.repsCompleted[key][exercise.level].push(completedReps);
+                    
+                    return {
+                        name: EXERCISES[key].name,
+                        key: key,
+                        level: exercise.level,
+                        completedSets: exercise.completedSets.length,
+                        targetReps: targetReps,
+                        completedReps: completedReps
+                    };
+                })
+            };
+            
+            userData.workoutHistory.push(workoutRecord);
+            
+            // Record progression snapshot
+            const progressionSnapshot = {
+                date: userData.currentWorkout.date,
+                levels: {...userData.levels}
+            };
+            
+            userData.progressionHistory.push(progressionSnapshot);
+            
+            // Clear current workout
+            userData.currentWorkout = null;
+            
+            saveUserData();
+            showToast("Workout completed! Great job! 🎉");
+            showPage('home-page');
+        }
+
+        // Progression page rendering
+        function renderProgression() {
+            const container = document.getElementById('progression-list');
+            let html = '';
+            
+            Object.keys(EXERCISES).forEach(exerciseKey => {
+                const exercise = EXERCISES[exerciseKey];
+                const currentLevel = userData.levels[exerciseKey];
+                const progress = ((currentLevel + 1) / exercise.levels.length) * 100;
+                
+                html += `
+                    <div class="progression-exercise">
+                        <div class="progression-header" onclick="toggleProgression('${exerciseKey}')">
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <div class="exercise-icon">${exercise.icon}</div>
+                                <div>
+                                    <div class="exercise-name">${exercise.name}</div>
+                                    <div class="exercise-level">Level ${currentLevel + 1}/10: ${exercise.levels[currentLevel]}</div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: ${progress}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="font-size: 1.2em;">▼</div>
+                        </div>
+                        <div class="progression-content" id="progression-${exerciseKey}">
+                            ${exercise.levels.map((level, index) => {
+                                let status = 'locked';
+                                let statusText = 'Locked';
+                                
+                                if (index < currentLevel) {
+                                    status = 'completed';
+                                    statusText = 'Completed';
+                                } else if (index === currentLevel) {
+                                    status = 'current';
+                                    statusText = 'Current';
+                                }
+                                
+                                const target = exercise.targets[index];
+                                
+                                return `
+                                    <div class="level-item ${status}">
+                                        <div>
+                                            <strong>Level ${index + 1}:</strong> ${level}
+                                            <div class="level-target">Target: ${target} ${typeof target === 'string' ? '' : 'reps'}</div>
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 10px;">
+                                            <div class="level-status ${status}">${statusText}</div>
+                                            ${index === currentLevel && index < exercise.levels.length - 1 ? 
+                                                `<button class="button" style="padding: 6px 12px; margin: 0; width: auto;" 
+                                                         onclick="requestAdvancement('${exerciseKey}')">Advance</button>` : ''}
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function toggleProgression(exerciseKey) {
+            const content = document.getElementById(`progression-${exerciseKey}`);
+            content.classList.toggle('open');
+        }
+
+        function requestAdvancement(exerciseKey) {
+            const exercise = EXERCISES[exerciseKey];
+            const currentLevel = userData.levels[exerciseKey];
+            const nextLevel = currentLevel + 1;
+            
+            if (nextLevel >= exercise.levels.length) return;
+            
+            currentAdvancementExercise = exerciseKey;
+            
+            document.getElementById('advancement-text').innerHTML = 
+                `Are you ready to advance from <strong>${exercise.levels[currentLevel]}</strong> to <strong>${exercise.levels[nextLevel]}</strong>?<br><br>
+                New target: ${exercise.targets[nextLevel]} ${typeof exercise.targets[nextLevel] === 'string' ? '' : 'reps'}`;
+            
+            document.getElementById('advancement-modal').classList.add('show');
+        }
+
+        function confirmAdvancement() {
+            if (currentAdvancementExercise) {
+                userData.levels[currentAdvancementExercise]++;
+                
+                // Record progression advancement
+                const advancementRecord = {
+                    date: new Date().toISOString(),
+                    levels: {...userData.levels}
+                };
+                userData.progressionHistory.push(advancementRecord);
+                
+                saveUserData();
+                renderProgression();
+                showToast(`Advanced to ${EXERCISES[currentAdvancementExercise].levels[userData.levels[currentAdvancementExercise]]}! 🎉`);
+            }
+            closeModal();
+        }
+
+        function closeModal() {
+            document.getElementById('advancement-modal').classList.remove('show');
+            currentAdvancementExercise = null;
+        }
+
+        // History page rendering
+        function renderHistory() {
+            // Update stats
+            document.getElementById('total-workouts').textContent = userData.workoutHistory.length;
+            document.getElementById('current-streak').textContent = calculateCurrentStreak();
+            document.getElementById('highest-level').textContent = getHighestLevel();
+            document.getElementById('total-levels').textContent = getTotalLevelsGained();
+            
+            // Render progression charts
+            renderProgressionCharts();
+            
+            // Render history list
+            const container = document.getElementById('history-list');
+            
+            if (userData.workoutHistory.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: #4a5568; padding: 40px;">No workouts yet. Start your first workout!</div>';
+                return;
             }
             
-            const ctx = document.getElementById('progress-chart').getContext('2d');
-            currentChart = new Chart(ctx, {
+            const sortedHistory = userData.workoutHistory.slice().reverse();
+            let html = '';
+            
+            sortedHistory.slice(0, 10).forEach(workout => { // Show last 10 workouts
+                const date = new Date(workout.date);
+                const exerciseDetails = workout.exercises.map(ex => 
+                    `${ex.name} (L${ex.level + 1}${ex.completedReps ? `: ${ex.completedReps}/${ex.targetReps}` : ''})`
+                ).join(', ');
+                
+                html += `
+                    <div class="history-item">
+                        <div class="history-date">${date.toLocaleDateString()}</div>
+                        <div class="history-exercises">${exerciseDetails}</div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function getHighestLevel() {
+            let highest = 1;
+            Object.values(userData.levels).forEach(level => {
+                highest = Math.max(highest, level + 1);
+            });
+            return highest;
+        }
+
+        function getTotalLevelsGained() {
+            return Object.values(userData.levels).reduce((sum, level) => sum + level, 0);
+        }
+
+        function renderProgressionCharts() {
+            if (currentChartView === 'individual') {
+                renderIndividualCharts();
+            } else {
+                renderCombinedChart();
+            }
+        }
+
+        function renderIndividualCharts() {
+            const container = document.getElementById('individual-charts');
+            let html = '';
+            
+            Object.keys(EXERCISES).forEach(exerciseKey => {
+                const exercise = EXERCISES[exerciseKey];
+                const currentLevel = userData.levels[exerciseKey];
+                const target = exercise.targets[currentLevel];
+                
+                html += `
+                    <div class="exercise-chart">
+                        <div class="exercise-chart-title">
+                            <span class="exercise-icon">${exercise.icon}</span>
+                            <span>${exercise.name} Progression</span>
+                        </div>
+                        <div class="progression-target">
+                            Current: Level ${currentLevel + 1} - ${exercise.levels[currentLevel]}
+                            <br>Target: ${target} ${typeof target === 'string' ? '' : 'reps'}
+                        </div>
+                        <canvas id="chart-${exerciseKey}"></canvas>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            
+            // Create individual charts
+            Object.keys(EXERCISES).forEach(exerciseKey => {
+                createExerciseChart(exerciseKey);
+            });
+        }
+
+        function renderCombinedChart() {
+            // Clear individual charts
+            Object.values(exerciseCharts).forEach(chart => {
+                if (chart) chart.destroy();
+            });
+            exerciseCharts = {};
+            
+            createCombinedChart();
+        }
+
+        function createExerciseChart(exerciseKey) {
+            const canvas = document.getElementById(`chart-${exerciseKey}`);
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const exercise = EXERCISES[exerciseKey];
+            
+            // Destroy existing chart if it exists
+            if (exerciseCharts[exerciseKey]) {
+                exerciseCharts[exerciseKey].destroy();
+            }
+            
+            const chartData = getExerciseChartData(exerciseKey);
+            
+            exerciseCharts[exerciseKey] = new Chart(ctx, {
                 type: 'line',
-                data: chartData,
+                data: {
+                    labels: chartData.labels,
+                    datasets: [{
+                        label: `${exercise.name} Level`,
+                        data: chartData.data,
+                        borderColor: '#38a169',
+                        backgroundColor: 'rgba(56, 161, 105, 0.1)',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#38a169',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 6,
+                        pointHoverRadius: 8,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: false,
-                            title: {
-                                display: true,
-                                text: 'Weight (lbs)'
-                            }
+                    plugins: {
+                        legend: {
+                            display: false
                         },
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Date'
+                        tooltip: {
+                            backgroundColor: 'rgba(26, 54, 93, 0.9)',
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            borderColor: '#38a169',
+                            borderWidth: 1,
+                            cornerRadius: 6,
+                            callbacks: {
+                                title: function(context) {
+                                    return context[0].label;
+                                },
+                                label: function(context) {
+                                    const level = context.parsed.y;
+                                    const levelName = exercise.levels[level];
+                                    const target = exercise.targets[level];
+                                    
+                                    // Get reps completed for this workout if available
+                                    const workoutIndex = context.dataIndex;
+                                    const workout = userData.workoutHistory[workoutIndex];
+                                    let repsInfo = '';
+                                    
+                                    if (workout) {
+                                        const exerciseData = workout.exercises.find(ex => ex.key === exerciseKey);
+                                        if (exerciseData && exerciseData.completedReps) {
+                                            repsInfo = `Completed: ${exerciseData.completedReps} reps`;
+                                        }
+                                    }
+                                    
+                                    const result = [
+                                        `Level ${level + 1}: ${levelName}`,
+                                        `Target: ${target} ${typeof target === 'string' ? '' : 'reps'}`
+                                    ];
+                                    
+                                    if (repsInfo) {
+                                        result.push(repsInfo);
+                                    }
+                                    
+                                    return result;
+                                }
                             }
                         }
                     },
-                    plugins: {
-                        legend: {
-                            display: true
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            },
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            }
+                        },
+                        y: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Level'
+                            },
+                            min: 0,
+                            max: 9,
+                            ticks: {
+                                stepSize: 1,
+                                callback: function(value) {
+                                    return `L${value + 1}`;
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    onClick: (event, activeElements) => {
+                        if (activeElements.length > 0) {
+                            const dataIndex = activeElements[0].index;
+                            const workout = userData.workoutHistory[dataIndex];
+                            if (workout) {
+                                const exerciseData = workout.exercises.find(ex => ex.key === exerciseKey);
+                                if (exerciseData) {
+                                    showWorkoutDetails(workout.date, exerciseData);
+                                }
+                            }
                         }
                     }
                 }
             });
         }
 
-        function prepareChartData(exerciseFilter, timeFilter) {
-            let filteredData = workoutData;
+        function createCombinedChart() {
+            const canvas = document.getElementById('combined-progression-chart');
+            if (!canvas) return;
             
-            // Filter by time
-            if (timeFilter !== 'all') {
-                const cutoffDate = new Date();
-                cutoffDate.setDate(cutoffDate.getDate() - timeFilter);
-                filteredData = filteredData.filter(workout => 
-                    new Date(workout.date) >= cutoffDate
-                );
+            const ctx = canvas.getContext('2d');
+            
+            // Destroy existing chart if it exists
+            if (exerciseCharts.combined) {
+                exerciseCharts.combined.destroy();
             }
             
             const datasets = [];
-            const exercises = exerciseFilter ? [exerciseFilter] : 
-                [...new Set(filteredData.flatMap(w => w.exercises.map(ex => ex.name)))];
+            const colors = ['#38a169', '#1a365d', '#e53e3e', '#d69e2e', '#9f7aea', '#00b5d8'];
             
-            exercises.forEach((exerciseName, index) => {
-                const dataPoints = [];
+            Object.keys(EXERCISES).forEach((exerciseKey, index) => {
+                const exercise = EXERCISES[exerciseKey];
+                const chartData = getExerciseChartData(exerciseKey);
                 
-                filteredData.forEach(workout => {
-                    const exercise = workout.exercises.find(ex => ex.name === exerciseName);
-                    if (exercise) {
-                        const maxWeight = Math.max(...exercise.sets.map(set => set.weight));
-                        dataPoints.push({
-                            x: workout.date,
-                            y: maxWeight
-                        });
-                    }
+                datasets.push({
+                    label: exercise.name,
+                    data: chartData.data,
+                    borderColor: colors[index],
+                    backgroundColor: colors[index] + '20',
+                    borderWidth: 2,
+                    pointBackgroundColor: colors[index],
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 1,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    fill: false,
+                    tension: 0.4
                 });
+            });
+            
+            // Use the labels from the first exercise (they should all be similar)
+            const allLabels = getExerciseChartData(Object.keys(EXERCISES)[0]).labels;
+            
+            exerciseCharts.combined = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: allLabels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'bottom'
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(26, 54, 93, 0.9)',
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            borderColor: '#38a169',
+                            borderWidth: 1,
+                            cornerRadius: 6,
+                            callbacks: {
+                                label: function(context) {
+                                    const exerciseKey = Object.keys(EXERCISES)[context.datasetIndex];
+                                    const exercise = EXERCISES[exerciseKey];
+                                    const level = context.parsed.y;
+                                    const levelName = exercise.levels[level];
+                                    const target = exercise.targets[level];
+                                    
+                                    return `${exercise.name}: Level ${level + 1} (${levelName}) - Target: ${target} ${typeof target === 'string' ? '' : 'reps'}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            },
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            }
+                        },
+                        y: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Level'
+                            },
+                            min: 0,
+                            max: 9,
+                            ticks: {
+                                stepSize: 1,
+                                callback: function(value) {
+                                    return `Level ${value + 1}`;
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        }
+
+        function getExerciseChartData(exerciseKey) {
+            const labels = [];
+            const data = [];
+            
+            // If no workout history, show current level
+            if (userData.workoutHistory.length === 0) {
+                labels.push(new Date().toLocaleDateString());
+                data.push(userData.levels[exerciseKey]);
+                return { labels, data };
+            }
+            
+            // Get data from workout history
+            userData.workoutHistory.forEach(workout => {
+                const date = new Date(workout.date).toLocaleDateString();
+                const exerciseData = workout.exercises.find(ex => ex.key === exerciseKey);
                 
-                if (dataPoints.length > 0) {
-                    datasets.push({
-                        label: exerciseName,
-                        data: dataPoints,
-                        borderColor: `hsl(${index * 137.5 % 360}, 70%, 50%)`,
-                        backgroundColor: `hsla(${index * 137.5 % 360}, 70%, 50%, 0.1)`,
-                        tension: 0.1
-                    });
+                if (exerciseData) {
+                    labels.push(date);
+                    data.push(exerciseData.level);
                 }
             });
             
-            return { datasets };
+            // Remove duplicates and sort by date
+            const uniqueData = [];
+            const seenDates = new Set();
+            
+            for (let i = 0; i < labels.length; i++) {
+                if (!seenDates.has(labels[i])) {
+                    seenDates.add(labels[i]);
+                    uniqueData.push({ date: labels[i], level: data[i] });
+                }
+            }
+            
+            uniqueData.sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            return {
+                labels: uniqueData.map(item => item.date),
+                data: uniqueData.map(item => item.level)
+            };
         }
 
-        // Initialize
-        document.getElementById('current-date').textContent = new Date().toLocaleDateString();
-        initializeApp();
+        function showWorkoutDetails(date, exerciseData) {
+            const formattedDate = new Date(date).toLocaleDateString();
+            const exercise = EXERCISES[exerciseData.key];
+            const levelName = exercise.levels[exerciseData.level];
+            const target = exercise.targets[exerciseData.level];
+            
+            showToast(`${formattedDate}: ${exercise.name} Level ${exerciseData.level + 1} (${levelName}) - Completed: ${exerciseData.completedReps || 'N/A'}/${target} ${typeof target === 'string' ? '' : 'reps'}`);
+        }
+
+        function toggleChartView(view) {
+            currentChartView = view;
+            
+            // Update toggle buttons
+            document.querySelectorAll('.chart-toggle').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Show/hide chart containers
+            if (view === 'individual') {
+                document.getElementById('individual-charts').style.display = 'block';
+                document.getElementById('combined-chart').style.display = 'none';
+                renderIndividualCharts();
+            } else {
+                document.getElementById('individual-charts').style.display = 'none';
+                document.getElementById('combined-chart').style.display = 'block';
+                renderCombinedChart();
+            }
+        }
+
+        function calculateCurrentStreak() {
+            if (userData.workoutHistory.length === 0) return 0;
+            
+            const sortedHistory = userData.workoutHistory.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
+            let streak = 0;
+            let currentDate = new Date();
+            currentDate.setHours(0, 0, 0, 0);
+            
+            for (let workout of sortedHistory) {
+                const workoutDate = new Date(workout.date);
+                workoutDate.setHours(0, 0, 0, 0);
+                
+                const diffDays = Math.floor((currentDate - workoutDate) / (1000 * 60 * 60 * 24));
+                
+                if (diffDays === streak || (streak === 0 && diffDays <= 1)) {
+                    streak++;
+                    currentDate.setDate(currentDate.getDate() - 1);
+                } else {
+                    break;
+                }
+            }
+            
+            return streak;
+        }
+
+        // Utility functions
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Initialize app when page loads
+        window.addEventListener('load', init);
+
+        // Close modal when clicking outside
+        document.getElementById('advancement-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
     </script>
 </body>
 </html>
