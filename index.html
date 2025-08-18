@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hybrid Calisthenics Tracker</title>
+    <meta name="theme-color" content="#1a365d">
+    <meta name="description" content="Track your calisthenics progression with Hybrid Calisthenics">
+    
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="./manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Hybrid Calisthenics">
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
         * {
@@ -493,6 +502,183 @@
             margin-bottom: 20px;
         }
 
+        /* Auth Screen Styles */
+        .auth-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #1a365d, #2c5282);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+        }
+
+        .auth-screen.hidden {
+            display: none;
+        }
+
+        .auth-content {
+            background: white;
+            border-radius: 12px;
+            padding: 60px 40px;
+            text-align: center;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23);
+            max-width: 400px;
+            width: 100%;
+            margin: 20px;
+        }
+
+        .auth-content h1 {
+            margin-bottom: 10px;
+            color: #1a365d;
+        }
+
+        .auth-content p {
+            color: #4a5568;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+
+        .google-sign-in-btn {
+            background: white;
+            border: 2px solid #e2e8f0;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            font-weight: 500;
+        }
+
+        .google-sign-in-btn:hover {
+            border-color: #1a365d;
+            box-shadow: 0 2px 8px rgba(26, 54, 93, 0.2);
+        }
+
+        .google-sign-in-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .google-icon {
+            width: 20px;
+            height: 20px;
+        }
+
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #f8f9fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 20px;
+            z-index: 2500;
+        }
+
+        .loading-screen.hidden {
+            display: none;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e2e8f0;
+            border-top: 4px solid #1a365d;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .main-app {
+            opacity: 1;
+            transition: opacity 0.3s;
+        }
+
+        .main-app.hidden {
+            display: none;
+        }
+
+        .main-app.loading {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-bottom: 15px;
+        }
+
+        .user-info:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .user-name {
+            font-size: 0.9rem;
+            color: white;
+            font-weight: 500;
+        }
+
+        .logout-btn {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            color: white;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 500;
+            margin-left: auto;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .error-message {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-size: 0.9rem;
+            text-align: left;
+        }
+
         .exercise-chart {
             margin-bottom: 30px;
             padding: 20px;
@@ -596,10 +782,52 @@
     </style>
 </head>
 <body>
-    <div class="app-container">
-        <div class="header">
+    <!-- Auth Screen -->
+    <div id="authScreen" class="auth-screen">
+        <div class="auth-content">
             <h1>Hybrid Calisthenics</h1>
-            <div class="subtitle">Progressive Bodyweight Training</div>
+            <p>Track your calisthenics progression and build strength progressively. Sign in with Google to sync your data across all devices.</p>
+            <button id="googleSignInBtn" class="google-sign-in-btn">
+                <svg class="google-icon" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                Continue with Google
+            </button>
+            <div id="authError" class="error-message hidden"></div>
+        </div>
+    </div>
+
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen hidden">
+        <div class="spinner"></div>
+        <p>Loading your workout data...</p>
+    </div>
+
+    <!-- Main App -->
+    <div id="mainApp" class="main-app hidden">
+        <div class="app-container">
+        <div class="header">
+            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                <div>
+                    <h1>Hybrid Calisthenics</h1>
+                    <div class="subtitle">Progressive Bodyweight Training</div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div id="userInfo" class="user-info">
+                        <img id="userAvatar" class="user-avatar" alt="Profile">
+                        <span id="userName" class="user-name"></span>
+                    </div>
+                    <button id="logoutBtn" class="logout-btn">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                        </svg>
+                        Logout
+                    </button>
+                </div>
+            </div>
         </div>
 
         <div class="content">
@@ -743,6 +971,7 @@
             </button>
         </div>
     </div>
+</div>
 
     <!-- Modal for progression advancement -->
     <div class="modal" id="advancement-modal">
@@ -759,7 +988,49 @@
     <!-- Toast notifications -->
     <div class="toast" id="toast"></div>
 
-    <script>
+    <script type="module">
+        // Firebase imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+        import { 
+            getAuth, 
+            GoogleAuthProvider, 
+            signInWithPopup, 
+            signOut, 
+            onAuthStateChanged,
+            setPersistence,
+            browserLocalPersistence
+        } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+        import { 
+            getFirestore, 
+            doc, 
+            setDoc, 
+            getDoc, 
+            collection, 
+            getDocs,
+            serverTimestamp 
+        } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+     
+const firebaseConfig = {
+  apiKey: "AIzaSyBJO7DW0g3pUyWDx8dOfZENOJJ5vCxs0CY",
+  authDomain: "trainlog-13513.firebaseapp.com",
+  projectId: "trainlog-13513",
+  storageBucket: "trainlog-13513.firebasestorage.app",
+  messagingSenderId: "502422561365",
+  appId: "1:502422561365:web:6642774f124939a7b9aadc",
+  measurementId: "G-D43TRYD9JG"
+};
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        
+        // Configure Google Auth Provider
+        const provider = new GoogleAuthProvider();
+        provider.addScope('profile');
+        provider.addScope('email');
+
         // Exercise data with exact progression targets as specified
         const EXERCISES = {
             pushups: {
@@ -884,51 +1155,324 @@
             workoutHistory: [],
             currentWorkout: null,
             progressionHistory: [],
-            repsCompleted: {}
+            repsCompleted: {},
+            customWorkout: false
         };
+
+        let currentUser = null;
+        let isSubmitting = false;
+
+        // DOM elements
+        const authScreen = document.getElementById('authScreen');
+        const loadingScreen = document.getElementById('loadingScreen');
+        const mainApp = document.getElementById('mainApp');
+        const googleSignInBtn = document.getElementById('googleSignInBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const authError = document.getElementById('authError');
 
         let currentAdvancementExercise = null;
         let currentChartView = 'individual';
         let exerciseCharts = {};
         let dataStore = {}; // In-memory storage as fallback
 
-        // Initialize app
-        function init() {
-            loadUserData();
-            initializeDefaultLevels();
+        // Initialize the app
+        async function initApp() {
+            console.log('🚀 Initializing Hybrid Calisthenics app...');
+            
+            try {
+                // Ensure auth screen is visible by default
+                showAuthScreen();
+                
+                // Ensure auth persists across reloads
+                try {
+                    await setPersistence(auth, browserLocalPersistence);
+                    console.log('🔒 Auth persistence set to local');
+                } catch (persistenceError) {
+                    console.warn('⚠️ Failed to set auth persistence; using default:', persistenceError);
+                }
+                
+                // Set up auth state listener
+                onAuthStateChanged(auth, async (user) => {
+                    console.log('🔐 Auth state changed:', user ? `${user.email} (${user.uid})` : 'No user');
+                    
+                    if (user) {
+                        currentUser = user;
+                        showLoadingScreen();
+                        try {
+                            await loadUserDataFromFirestore();
+                            await saveUserProfileIfNeeded();
+                            showMainApp();
+                        } catch (error) {
+                            console.error('❌ Error loading user data:', error);
+                            showMainApp(); // Show app even if data loading fails
+                        }
+                    } else {
+                        currentUser = null;
+                        showAuthScreen();
+                    }
+                });
+
+                // Set up event listeners
+                setupEventListeners();
+                
+                console.log('✅ App initialization complete');
+                
+            } catch (error) {
+                console.error('💥 App initialization error:', error);
+                showAuthError(`App initialization failed: ${error.message}`);
+            }
+        }
+
+        function showAuthScreen() {
+            console.log('📱 Showing auth screen');
+            authScreen.classList.remove('hidden');
+            loadingScreen.classList.add('hidden');
+            mainApp.classList.add('hidden');
+        }
+
+        function showLoadingScreen() {
+            console.log('⏳ Showing loading screen');
+            authScreen.classList.add('hidden');
+            loadingScreen.classList.remove('hidden');
+            mainApp.classList.add('hidden');
+        }
+
+        function showMainApp() {
+            console.log('🎉 Showing main app');
+            authScreen.classList.add('hidden');
+            loadingScreen.classList.add('hidden');
+            mainApp.classList.remove('hidden');
+            
+            // Update user info
+            document.getElementById('userAvatar').src = currentUser.photoURL || '';
+            document.getElementById('userName').textContent = currentUser.displayName || currentUser.email || 'User';
+            
+            // Ensure userData is properly initialized
+            if (!userData.levels || Object.keys(userData.levels).length === 0) {
+                console.log('Initializing userData.levels...');
+                initializeDefaultLevels();
+            }
+            
+            // Initialize app components
             renderHome();
             renderProgression();
             renderHistory();
         }
 
+        function setupEventListeners() {
+            // Auth listeners
+            googleSignInBtn.addEventListener('click', signInWithGoogle);
+            logoutBtn.addEventListener('click', signOutUser);
+        }
+
+        async function signInWithGoogle() {
+            try {
+                console.log('🔑 Starting Google Sign-In...');
+                hideAuthError();
+                
+                googleSignInBtn.disabled = true;
+                googleSignInBtn.textContent = 'Signing in...';
+                
+                const result = await signInWithPopup(auth, provider);
+                console.log('✅ Sign-in successful:', result.user.displayName || result.user.email);
+                
+            } catch (error) {
+                console.error('❌ Sign-in error:', error);
+                
+                let errorMessage = 'Failed to sign in with Google. ';
+                
+                switch (error.code) {
+                    case 'auth/popup-blocked':
+                        errorMessage += 'Please allow popups for this site.';
+                        break;
+                    case 'auth/popup-closed-by-user':
+                        errorMessage += 'Sign-in was cancelled.';
+                        break;
+                    case 'auth/unauthorized-domain':
+                        errorMessage += 'This domain is not authorized. Please contact support.';
+                        break;
+                    case 'auth/operation-not-allowed':
+                        errorMessage += 'Google Sign-In is not enabled.';
+                        break;
+                    default:
+                        errorMessage += `Error: ${error.message}`;
+                }
+                
+                showAuthError(errorMessage);
+                
+                googleSignInBtn.disabled = false;
+                googleSignInBtn.innerHTML = `
+                    <svg class="google-icon" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    Continue with Google
+                `;
+            }
+        }
+
+        async function signOutUser() {
+            try {
+                await signOut(auth);
+                console.log('Sign-out successful');
+                // Reset app state
+                userData = {
+                    levels: {},
+                    workoutHistory: [],
+                    currentWorkout: null,
+                    progressionHistory: [],
+                    repsCompleted: {},
+                    customWorkout: false
+                };
+                currentUser = null;
+            } catch (error) {
+                console.error('Sign-out error:', error);
+            }
+        }
+
+        function showAuthError(message) {
+            authError.textContent = message;
+            authError.classList.remove('hidden');
+        }
+
+        function hideAuthError() {
+            authError.classList.add('hidden');
+        }
+
+        // Initialize app (replaced by initApp)
+        function init() {
+            // This function is now replaced by initApp
+            // Keeping for backward compatibility
+        }
+
+        // --- PATCH START ---
+        // Robust Firestore data management
+        async function loadUserDataFromFirestore() {
+            try {
+                if (!currentUser) return;
+                const userDoc = await getDoc(doc(db, 'workoutUsers', currentUser.uid));
+                if (userDoc.exists()) {
+                    const data = userDoc.data();
+                    userData = {
+                        levels: data.levels || {},
+                        workoutHistory: data.workoutHistory || [],
+                        currentWorkout: data.currentWorkout || null,
+                        progressionHistory: data.progressionHistory || [],
+                        repsCompleted: data.repsCompleted || {},
+                        customWorkout: data.customWorkout === true
+                    };
+                } else {
+                    // New user - initialize with defaults
+                    userData = {
+                        levels: {},
+                        workoutHistory: [],
+                        currentWorkout: null,
+                        progressionHistory: [],
+                        repsCompleted: {},
+                        customWorkout: false
+                    };
+                    await initializeDefaultLevels();
+                    await saveUserDataToFirestore();
+                }
+                // Defensive: ensure all fields exist
+                if (!userData.levels) userData.levels = {};
+                if (!userData.workoutHistory) userData.workoutHistory = [];
+                if (!userData.progressionHistory) userData.progressionHistory = [];
+                if (!userData.repsCompleted) userData.repsCompleted = {};
+                if (userData.customWorkout === undefined) userData.customWorkout = false;
+                console.log('User data loaded successfully from Firestore');
+            } catch (error) {
+                console.error('Error loading user data from Firestore:', error);
+                // Continue with defaults if loading fails
+                userData = {
+                    levels: {},
+                    workoutHistory: [],
+                    currentWorkout: null,
+                    progressionHistory: [],
+                    repsCompleted: {},
+                    customWorkout: false
+                };
+                await initializeDefaultLevels();
+            }
+        }
+
+        async function saveUserDataToFirestore() {
+            try {
+                if (!currentUser) return;
+                const userRef = doc(db, 'workoutUsers', currentUser.uid);
+                await setDoc(userRef, {
+                    ...userData,
+                    updatedAt: serverTimestamp(),
+                    profile: {
+                        uid: currentUser.uid,
+                        displayName: currentUser.displayName || '',
+                        email: currentUser.email || '',
+                        photoURL: currentUser.photoURL || ''
+                    }
+                }, { merge: true });
+                console.log('User data saved successfully to Firestore');
+            } catch (error) {
+                console.error('Error saving user data to Firestore:', error);
+                // Fallback to localStorage
+                saveUserData();
+            }
+        }
+        // --- PATCH END ---
+
+        // Save user profile info on sign in
+        async function saveUserProfileIfNeeded() {
+            if (!currentUser) return;
+            
+            try {
+                const userRef = doc(db, 'workoutUsers', currentUser.uid);
+                await setDoc(userRef, {
+                    profile: {
+                        uid: currentUser.uid,
+                        displayName: currentUser.displayName || '',
+                        email: currentUser.email || '',
+                        photoURL: currentUser.photoURL || ''
+                    },
+                    updatedAt: serverTimestamp()
+                }, { merge: true });
+            } catch (error) {
+                console.error('Error saving user profile:', error);
+            }
+        }
+
         // Data management with localStorage fallback
         function loadUserData() {
             try {
-                const saved = localStorage.getItem('hybridCalisthenicsData');
+                const keyBase = currentUser && currentUser.uid ? `hybridCalisthenicsData:${currentUser.uid}` : 'hybridCalisthenicsData:anon';
+                const saved = localStorage.getItem(keyBase);
                 if (saved) {
                     userData = JSON.parse(saved);
-                } else if (dataStore.hybridCalisthenicsData) {
-                    userData = dataStore.hybridCalisthenicsData;
+                } else if (dataStore[keyBase]) {
+                    userData = dataStore[keyBase];
                 } else {
                     userData = {
                         levels: {},
                         workoutHistory: [],
                         currentWorkout: null,
                         progressionHistory: [],
-                        repsCompleted: {}
+                        repsCompleted: {},
+                        customWorkout: false
                     };
                 }
             } catch (e) {
                 // Fallback to in-memory storage
-                if (dataStore.hybridCalisthenicsData) {
-                    userData = dataStore.hybridCalisthenicsData;
+                const keyBase = currentUser && currentUser.uid ? `hybridCalisthenicsData:${currentUser.uid}` : 'hybridCalisthenicsData:anon';
+                if (dataStore[keyBase]) {
+                    userData = dataStore[keyBase];
                 } else {
                     userData = {
                         levels: {},
                         workoutHistory: [],
                         currentWorkout: null,
                         progressionHistory: [],
-                        repsCompleted: {}
+                        repsCompleted: {},
+                        customWorkout: false
                     };
                 }
             }
@@ -936,24 +1480,42 @@
 
         function saveUserData() {
             try {
-                localStorage.setItem('hybridCalisthenicsData', JSON.stringify(userData));
+                const keyBase = currentUser && currentUser.uid ? `hybridCalisthenicsData:${currentUser.uid}` : 'hybridCalisthenicsData:anon';
+                localStorage.setItem(keyBase, JSON.stringify(userData));
             } catch (e) {
                 // Fallback to in-memory storage
-                dataStore.hybridCalisthenicsData = userData;
+                const keyBase = currentUser && currentUser.uid ? `hybridCalisthenicsData:${currentUser.uid}` : 'hybridCalisthenicsData:anon';
+                dataStore[keyBase] = userData;
                 console.log('Using in-memory storage due to localStorage restriction');
             }
         }
 
-        function initializeDefaultLevels() {
+        async function initializeDefaultLevels() {
+            // Ensure userData.levels exists
+            if (!userData.levels) {
+                userData.levels = {};
+            }
+            if (!userData.repsCompleted) {
+                userData.repsCompleted = {};
+            }
+            if (userData.customWorkout === undefined) {
+                userData.customWorkout = false;
+            }
+            
             Object.keys(EXERCISES).forEach(exerciseKey => {
-                if (!userData.levels[exerciseKey]) {
+                if (userData.levels[exerciseKey] === undefined || userData.levels[exerciseKey] === null) {
                     userData.levels[exerciseKey] = 0; // Start at level 0
                 }
                 if (!userData.repsCompleted[exerciseKey]) {
                     userData.repsCompleted[exerciseKey] = {};
                 }
             });
-            saveUserData();
+            
+            if (currentUser) {
+                await saveUserDataToFirestore();
+            } else {
+                saveUserData();
+            }
         }
 
         // Navigation
@@ -1007,12 +1569,24 @@
             } else {
                 userData.customWorkout = false;
             }
+            // Persist customWorkout flag
+            if (currentUser) {
+                saveUserDataToFirestore();
+            } else {
+                saveUserData();
+            }
             
             showPage('workout-page');
         }
 
         // Home page rendering
         function renderHome() {
+            // Ensure userData is properly initialized
+            if (!userData || !userData.levels || Object.keys(userData.levels).length === 0) {
+                console.log('userData not initialized, initializing now...');
+                initializeDefaultLevels();
+            }
+            
             renderWeeklyCalendar();
             renderTodayRoutine();
         }
@@ -1034,7 +1608,7 @@
             currentWeek.forEach((date, index) => {
                 const dateString = date.toDateString();
                 const isToday = date.toDateString() === today.toDateString();
-                const hasWorkout = userData.workoutHistory.some(workout => 
+                const hasWorkout = (userData.workoutHistory || []).some(workout => 
                     new Date(workout.date).toDateString() === dateString
                 );
                 const dayOfWeek = date.getDay();
@@ -1074,6 +1648,10 @@
             const today = new Date().getDay();
             const todayExercises = WORKOUT_SCHEDULE[today] || [];
             
+            // Debug logging
+            console.log('renderTodayRoutine - userData:', userData);
+            console.log('renderTodayRoutine - userData.levels:', userData.levels);
+            
             if (todayExercises.length === 0) {
                 container.innerHTML = `
                     <div style="text-align: center; color: #4a5568; padding: 20px;">
@@ -1089,9 +1667,12 @@
             let html = '';
             todayExercises.forEach(exerciseKey => {
                 const exercise = EXERCISES[exerciseKey];
-                const currentLevel = userData.levels[exerciseKey];
-                const levelName = exercise.levels[currentLevel];
-                const target = exercise.targets[currentLevel];
+                const currentLevel = userData.levels[exerciseKey] || 0; // Default to 0 if undefined
+                const levelName = exercise.levels[currentLevel] || 'Unknown Level';
+                const target = exercise.targets[currentLevel] || 'Unknown Target';
+                
+                // Debug logging for each exercise
+                console.log(`Exercise: ${exerciseKey}, Level: ${currentLevel}, LevelName: ${levelName}, Target: ${target}`);
                 
                 html += `
                     <div class="exercise-card">
@@ -1130,6 +1711,12 @@
             
             document.getElementById('exercise-selector').style.display = 'none';
             
+            // If a current workout exists for today, reuse it
+            if (userData.currentWorkout && isSameDay(new Date(userData.currentWorkout.date), new Date())) {
+                renderWorkoutExercises();
+                return;
+            }
+
             // Initialize current workout
             userData.currentWorkout = {
                 date: new Date().toISOString(),
@@ -1141,10 +1728,17 @@
                     level: userData.levels[exerciseKey],
                     targetSets: getTargetSets(exerciseKey, userData.levels[exerciseKey]),
                     completedSets: [],
-                    repsPerSet: Math.ceil(EXERCISES[exerciseKey].targets[userData.levels[exerciseKey]] / getTargetSets(exerciseKey, userData.levels[exerciseKey]))
+                    repsPerSet: getRepsPerSet(exerciseKey, userData.levels[exerciseKey])
                 };
             });
             
+            // Persist started workout
+            if (currentUser) {
+                saveUserDataToFirestore();
+            } else {
+                saveUserData();
+            }
+
             renderWorkoutExercises();
         }
 
@@ -1171,10 +1765,17 @@
                     level: userData.levels[exerciseKey],
                     targetSets: getTargetSets(exerciseKey, userData.levels[exerciseKey]),
                     completedSets: [],
-                    repsPerSet: Math.ceil(EXERCISES[exerciseKey].targets[userData.levels[exerciseKey]] / getTargetSets(exerciseKey, userData.levels[exerciseKey]))
+                    repsPerSet: getRepsPerSet(exerciseKey, userData.levels[exerciseKey])
                 };
             });
             
+            // Persist immediately
+            if (currentUser) {
+                saveUserDataToFirestore();
+            } else {
+                saveUserData();
+            }
+
             renderWorkoutExercises();
         }
 
@@ -1228,6 +1829,20 @@
             return Math.min(3 + Math.floor(level / 3), 5);
         }
 
+        function getRepsPerSet(exerciseKey, level) {
+            const target = EXERCISES[exerciseKey].targets[level];
+            const sets = getTargetSets(exerciseKey, level);
+            if (typeof target === 'number' && Number.isFinite(target)) {
+                return Math.max(1, Math.ceil(target / sets));
+            }
+            // For time-based or non-numeric targets, use a neutral per-set value
+            return 1;
+        }
+
+        function isSameDay(a, b) {
+            return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+        }
+
         function toggleSet(exerciseKey, setIndex) {
             const workoutExercise = userData.currentWorkout.exercises[exerciseKey];
             const setCompleted = workoutExercise.completedSets.includes(setIndex);
@@ -1239,6 +1854,12 @@
             }
             
             renderWorkoutExercises();
+            // Persist progress after each toggle
+            if (currentUser) {
+                saveUserDataToFirestore();
+            } else {
+                saveUserData();
+            }
         }
 
         function updateCompleteButton() {
@@ -1262,7 +1883,7 @@
             button.textContent = allCompleted ? 'COMPLETE WORKOUT' : 'FINISH ALL SETS FIRST';
         }
 
-        function completeWorkout() {
+        async function completeWorkout() {
             if (!userData.currentWorkout) return;
             
             // Add to history with current levels and reps completed
@@ -1271,7 +1892,9 @@
                 exercises: Object.keys(userData.currentWorkout.exercises).map(key => {
                     const exercise = userData.currentWorkout.exercises[key];
                     const targetReps = EXERCISES[key].targets[exercise.level];
-                    const completedReps = exercise.completedSets.length * exercise.repsPerSet;
+                    const completedReps = (typeof targetReps === 'number') 
+                        ? exercise.completedSets.length * exercise.repsPerSet 
+                        : null;
                     
                     // Store reps completed for this level
                     if (!userData.repsCompleted[key][exercise.level]) {
@@ -1304,19 +1927,29 @@
             userData.currentWorkout = null;
             userData.customWorkout = false;
             
-            saveUserData();
+            if (currentUser) {
+                await saveUserDataToFirestore();
+            } else {
+                saveUserData();
+            }
             showToast("Workout completed! Great job! 🎉");
             showPage('home-page');
         }
 
         // Progression page rendering
         function renderProgression() {
+            // Ensure userData is properly initialized
+            if (!userData || !userData.levels || Object.keys(userData.levels).length === 0) {
+                console.log('userData not initialized in renderProgression, initializing now...');
+                initializeDefaultLevels();
+            }
+            
             const container = document.getElementById('progression-list');
             let html = '';
             
             Object.keys(EXERCISES).forEach(exerciseKey => {
                 const exercise = EXERCISES[exerciseKey];
-                const currentLevel = userData.levels[exerciseKey];
+                const currentLevel = userData.levels[exerciseKey] || 0; // Default to 0 if undefined
                 const progress = ((currentLevel + 1) / exercise.levels.length) * 100;
                 
                 html += `
@@ -1393,7 +2026,7 @@
             document.getElementById('advancement-modal').classList.add('show');
         }
 
-        function confirmAdvancement() {
+        async function confirmAdvancement() {
             if (currentAdvancementExercise) {
                 userData.levels[currentAdvancementExercise]++;
                 
@@ -1404,7 +2037,11 @@
                 };
                 userData.progressionHistory.push(advancementRecord);
                 
-                saveUserData();
+                if (currentUser) {
+                    await saveUserDataToFirestore();
+                } else {
+                    saveUserData();
+                }
                 renderProgression();
                 showToast(`Advanced to ${EXERCISES[currentAdvancementExercise].levels[userData.levels[currentAdvancementExercise]]}! 🎉`);
             }
@@ -1418,8 +2055,14 @@
 
         // History page rendering
         function renderHistory() {
+            // Ensure userData is properly initialized
+            if (!userData || !userData.levels || Object.keys(userData.levels).length === 0) {
+                console.log('userData not initialized in renderHistory, initializing now...');
+                initializeDefaultLevels();
+            }
+            
             // Update stats
-            document.getElementById('total-workouts').textContent = userData.workoutHistory.length;
+            document.getElementById('total-workouts').textContent = (userData.workoutHistory || []).length;
             document.getElementById('current-streak').textContent = calculateCurrentStreak();
             document.getElementById('highest-level').textContent = getHighestLevel();
             document.getElementById('total-levels').textContent = getTotalLevelsGained();
@@ -1456,6 +2099,9 @@
         }
 
         function getHighestLevel() {
+            if (!userData.levels || Object.keys(userData.levels).length === 0) {
+                return 1;
+            }
             let highest = 1;
             Object.values(userData.levels).forEach(level => {
                 highest = Math.max(highest, level + 1);
@@ -1464,6 +2110,9 @@
         }
 
         function getTotalLevelsGained() {
+            if (!userData.levels || Object.keys(userData.levels).length === 0) {
+                return 0;
+            }
             return Object.values(userData.levels).reduce((sum, level) => sum + level, 0);
         }
 
@@ -1481,8 +2130,8 @@
             
             Object.keys(EXERCISES).forEach(exerciseKey => {
                 const exercise = EXERCISES[exerciseKey];
-                const currentLevel = userData.levels[exerciseKey];
-                const target = exercise.targets[currentLevel];
+                const currentLevel = userData.levels[exerciseKey] || 0; // Default to 0 if undefined
+                const target = exercise.targets[currentLevel] || 'Unknown Target';
                 
                 html += `
                     <div class="exercise-chart">
@@ -1578,7 +2227,7 @@
                                     const target = exercise.targets[level];
                                     
                                     const workoutIndex = context.dataIndex;
-                                    const workout = userData.workoutHistory[workoutIndex];
+                                    const workout = (userData.workoutHistory || [])[workoutIndex];
                                     let repsInfo = '';
                                     
                                     if (workout) {
@@ -1754,14 +2403,14 @@
             const data = [];
             
             // If no workout history, show current level
-            if (userData.workoutHistory.length === 0) {
+            if (!userData.workoutHistory || userData.workoutHistory.length === 0) {
                 labels.push(new Date().toLocaleDateString());
-                data.push(userData.levels[exerciseKey]);
+                data.push(userData.levels[exerciseKey] || 0);
                 return { labels, data };
             }
             
             // Get data from workout history
-            userData.workoutHistory.forEach(workout => {
+            (userData.workoutHistory || []).forEach(workout => {
                 const date = new Date(workout.date).toLocaleDateString();
                 const exerciseData = workout.exercises.find(ex => ex.key === exerciseKey);
                 
@@ -1791,7 +2440,7 @@
         }
 
         function calculateCurrentStreak() {
-            if (userData.workoutHistory.length === 0) return 0;
+            if (!userData.workoutHistory || userData.workoutHistory.length === 0) return 0;
             
             const sortedHistory = userData.workoutHistory.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
             let streak = 0;
@@ -1847,8 +2496,20 @@
             }, 3000);
         }
 
+        // Make functions global for onclick handlers
+        window.goToWorkout = goToWorkout;
+        window.showPage = showPage;
+        window.toggleProgression = toggleProgression;
+        window.requestAdvancement = requestAdvancement;
+        window.confirmAdvancement = confirmAdvancement;
+        window.closeModal = closeModal;
+        window.completeWorkout = completeWorkout;
+        window.confirmCustomExercises = confirmCustomExercises;
+        window.toggleSet = toggleSet;
+        window.toggleChartView = toggleChartView;
+
         // Initialize app when page loads
-        window.addEventListener('load', init);
+        window.addEventListener('load', initApp);
 
         // Close modal when clicking outside
         document.getElementById('advancement-modal').addEventListener('click', function(e) {
