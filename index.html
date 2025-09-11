@@ -169,6 +169,7 @@
             grid-template-columns: repeat(7, 1fr);
             gap: 8px;
             margin-bottom: 20px;
+            width: 100%;
         }
 
         .calendar-day {
@@ -183,12 +184,19 @@
             position: relative;
             transition: all 0.3s ease;
             font-size: 0.9em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 0;
         }
 
         .calendar-day.header {
             background: #1a365d;
             color: white;
             font-size: 0.8em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .calendar-day.workout {
@@ -700,6 +708,30 @@
             max-height: 250px;
         }
 
+        .chart-container {
+            position: relative;
+            overflow-x: auto;
+            overflow-y: hidden;
+        }
+
+        .chart-container::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .chart-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .chart-container::-webkit-scrollbar-thumb {
+            background: #38a169;
+            border-radius: 4px;
+        }
+
+        .chart-container::-webkit-scrollbar-thumb:hover {
+            background: #2f855a;
+        }
+
         .chart-tooltip {
             background: rgba(26, 54, 93, 0.9);
             color: white;
@@ -771,12 +803,16 @@
                 flex-direction: column;
             }
 
+            .calendar-grid {
+                gap: 4px;
+            }
+
             .calendar-day {
-                font-size: 0.8em;
+                font-size: 0.75em;
             }
 
             .calendar-day.header {
-                font-size: 0.7em;
+                font-size: 0.65em;
             }
         }
     </style>
@@ -935,7 +971,9 @@
                     </div>
                     
                     <div id="combined-chart" class="chart-container" style="display: none;">
-                        <canvas id="combined-progression-chart"></canvas>
+                        <div class="chart-container">
+                            <canvas id="combined-progression-chart"></canvas>
+                        </div>
                     </div>
                 </div>
 
@@ -2143,7 +2181,9 @@ const firebaseConfig = {
                             Current: Level ${currentLevel + 1} - ${exercise.levels[currentLevel]}
                             <br>Target: ${target} ${typeof target === 'string' ? '' : 'reps'}
                         </div>
-                        <canvas id="chart-${exerciseKey}"></canvas>
+                        <div class="chart-container">
+                            <canvas id="chart-${exerciseKey}"></canvas>
+                        </div>
                     </div>
                 `;
             });
@@ -2183,6 +2223,7 @@ const firebaseConfig = {
             }
             
             const chartData = getExerciseChartData(exerciseKey);
+            const hasManyWorkouts = chartData.labels.length > 10;
             
             exerciseCharts[exerciseKey] = new Chart(ctx, {
                 type: 'line',
@@ -2206,6 +2247,11 @@ const firebaseConfig = {
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    layout: {
+                        padding: {
+                            right: hasManyWorkouts ? 40 : 20
+                        }
+                    },
                     plugins: {
                         legend: {
                             display: false
@@ -2222,28 +2268,23 @@ const firebaseConfig = {
                                     return context[0].label;
                                 },
                                 label: function(context) {
+                                    const dataIndex = context.dataIndex;
+                                    const workoutInfo = chartData.workoutData[dataIndex];
+                                    
+                                    if (!workoutInfo) return '';
+                                    
                                     const level = context.parsed.y;
                                     const levelName = exercise.levels[level];
                                     const target = exercise.targets[level];
                                     
-                                    const workoutIndex = context.dataIndex;
-                                    const workout = (userData.workoutHistory || [])[workoutIndex];
-                                    let repsInfo = '';
-                                    
-                                    if (workout) {
-                                        const exerciseData = workout.exercises.find(ex => ex.key === exerciseKey);
-                                        if (exerciseData && exerciseData.completedReps) {
-                                            repsInfo = `Completed: ${exerciseData.completedReps} reps`;
-                                        }
-                                    }
-                                    
                                     const result = [
+                                        `${exercise.name}`,
                                         `Level ${level + 1}: ${levelName}`,
                                         `Target: ${target} ${typeof target === 'string' ? '' : 'reps'}`
                                     ];
                                     
-                                    if (repsInfo) {
-                                        result.push(repsInfo);
+                                    if (workoutInfo.exerciseData && workoutInfo.exerciseData.completedReps) {
+                                        result.push(`Completed: ${workoutInfo.exerciseData.completedReps} reps`);
                                     }
                                     
                                     return result;
@@ -2256,10 +2297,16 @@ const firebaseConfig = {
                             display: true,
                             title: {
                                 display: true,
-                                text: 'Date'
+                                text: 'Workout Date'
                             },
                             grid: {
                                 color: 'rgba(0,0,0,0.1)'
+                            },
+                            // For many workouts, show fewer labels to prevent crowding
+                            ticks: {
+                                maxTicksLimit: hasManyWorkouts ? 8 : 12,
+                                maxRotation: hasManyWorkouts ? 45 : 0,
+                                minRotation: 0
                             }
                         },
                         y: {
@@ -2302,10 +2349,18 @@ const firebaseConfig = {
             
             const datasets = [];
             const colors = ['#38a169', '#1a365d', '#e53e3e', '#d69e2e', '#9f7aea', '#00b5d8'];
+            let allLabels = [];
+            let maxWorkouts = 0;
             
             Object.keys(EXERCISES).forEach((exerciseKey, index) => {
                 const exercise = EXERCISES[exerciseKey];
                 const chartData = getExerciseChartData(exerciseKey);
+                
+                // Track the exercise with the most workouts for labels
+                if (chartData.labels.length > maxWorkouts) {
+                    maxWorkouts = chartData.labels.length;
+                    allLabels = chartData.labels;
+                }
                 
                 datasets.push({
                     label: exercise.name,
@@ -2323,8 +2378,7 @@ const firebaseConfig = {
                 });
             });
             
-            // Use the labels from the first exercise
-            const allLabels = getExerciseChartData(Object.keys(EXERCISES)[0]).labels;
+            const hasManyWorkouts = maxWorkouts > 10;
             
             exerciseCharts.combined = new Chart(ctx, {
                 type: 'line',
@@ -2335,6 +2389,11 @@ const firebaseConfig = {
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    layout: {
+                        padding: {
+                            right: hasManyWorkouts ? 40 : 20
+                        }
+                    },
                     plugins: {
                         legend: {
                             display: true,
@@ -2348,6 +2407,9 @@ const firebaseConfig = {
                             borderWidth: 1,
                             cornerRadius: 6,
                             callbacks: {
+                                title: function(context) {
+                                    return context[0].label;
+                                },
                                 label: function(context) {
                                     const exerciseKey = Object.keys(EXERCISES)[context.datasetIndex];
                                     const exercise = EXERCISES[exerciseKey];
@@ -2365,10 +2427,16 @@ const firebaseConfig = {
                             display: true,
                             title: {
                                 display: true,
-                                text: 'Date'
+                                text: 'Workout Date'
                             },
                             grid: {
                                 color: 'rgba(0,0,0,0.1)'
+                            },
+                            // For many workouts, show fewer labels to prevent crowding
+                            ticks: {
+                                maxTicksLimit: hasManyWorkouts ? 8 : 12,
+                                maxRotation: hasManyWorkouts ? 45 : 0,
+                                minRotation: 0
                             }
                         },
                         y: {
@@ -2401,41 +2469,43 @@ const firebaseConfig = {
         function getExerciseChartData(exerciseKey) {
             const labels = [];
             const data = [];
+            const workoutData = [];
             
             // If no workout history, show current level
             if (!userData.workoutHistory || userData.workoutHistory.length === 0) {
                 labels.push(new Date().toLocaleDateString());
                 data.push(userData.levels[exerciseKey] || 0);
-                return { labels, data };
+                workoutData.push({
+                    date: new Date().toLocaleDateString(),
+                    level: userData.levels[exerciseKey] || 0,
+                    workout: null
+                });
+                return { labels, data, workoutData };
             }
             
-            // Get data from workout history
-            (userData.workoutHistory || []).forEach(workout => {
-                const date = new Date(workout.date).toLocaleDateString();
+            // Get data from workout history - sort by date first
+            const sortedWorkouts = (userData.workoutHistory || []).slice().sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            sortedWorkouts.forEach(workout => {
                 const exerciseData = workout.exercises.find(ex => ex.key === exerciseKey);
                 
                 if (exerciseData) {
+                    const date = new Date(workout.date).toLocaleDateString();
                     labels.push(date);
                     data.push(exerciseData.level);
+                    workoutData.push({
+                        date: date,
+                        level: exerciseData.level,
+                        workout: workout,
+                        exerciseData: exerciseData
+                    });
                 }
             });
             
-            // Remove duplicates and sort by date
-            const uniqueData = [];
-            const seenDates = new Set();
-            
-            for (let i = 0; i < labels.length; i++) {
-                if (!seenDates.has(labels[i])) {
-                    seenDates.add(labels[i]);
-                    uniqueData.push({ date: labels[i], level: data[i] });
-                }
-            }
-            
-            uniqueData.sort((a, b) => new Date(a.date) - new Date(b.date));
-            
             return {
-                labels: uniqueData.map(item => item.date),
-                data: uniqueData.map(item => item.level)
+                labels: labels,
+                data: data,
+                workoutData: workoutData
             };
         }
 
