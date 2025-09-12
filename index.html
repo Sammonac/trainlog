@@ -705,7 +705,12 @@
         }
 
         .exercise-chart canvas {
-            max-height: 250px;
+            height: 320px;
+        }
+
+        /* Combined chart height */
+        #combined-progression-chart {
+            height: 320px;
         }
 
         .chart-container {
@@ -796,7 +801,11 @@
             }
 
             .exercise-chart canvas {
-                max-height: 200px;
+                height: 240px;
+            }
+
+            #combined-progression-chart {
+                height: 240px;
             }
 
             .chart-controls {
@@ -2319,6 +2328,7 @@ const firebaseConfig = {
                             max: 9,
                             ticks: {
                                 stepSize: 1,
+                                autoSkip: false,
                                 callback: function(value) {
                                     return `L${value + 1}`;
                                 }
@@ -2449,6 +2459,7 @@ const firebaseConfig = {
                             max: 9,
                             ticks: {
                                 stepSize: 1,
+                                autoSkip: false,
                                 callback: function(value) {
                                     return `Level ${value + 1}`;
                                 }
@@ -2473,10 +2484,10 @@ const firebaseConfig = {
             
             // If no workout history, show current level
             if (!userData.workoutHistory || userData.workoutHistory.length === 0) {
-                labels.push(new Date().toLocaleDateString());
+                labels.push(new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
                 data.push(userData.levels[exerciseKey] || 0);
                 workoutData.push({
-                    date: new Date().toLocaleDateString(),
+                    date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
                     level: userData.levels[exerciseKey] || 0,
                     workout: null
                 });
@@ -2490,7 +2501,7 @@ const firebaseConfig = {
                 const exerciseData = workout.exercises.find(ex => ex.key === exerciseKey);
                 
                 if (exerciseData) {
-                    const date = new Date(workout.date).toLocaleDateString();
+                    const date = new Date(workout.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                     labels.push(date);
                     data.push(exerciseData.level);
                     workoutData.push({
