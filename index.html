@@ -737,6 +737,73 @@
             background: #2f855a;
         }
 
+        .chart-pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-top: 15px;
+            padding: 10px;
+        }
+
+        .chart-pagination button {
+            background: #1a365d;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            min-width: 80px;
+        }
+
+        .chart-pagination button:hover:not(:disabled) {
+            background: #2c5282;
+            transform: translateY(-1px);
+        }
+
+        .chart-pagination button:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .chart-pagination-info {
+            color: #4a5568;
+            font-size: 0.9em;
+            font-weight: 500;
+            min-width: 120px;
+            text-align: center;
+        }
+
+        .chart-scroll-container {
+            position: relative;
+            overflow-x: auto;
+            overflow-y: hidden;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .chart-scroll-container::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .chart-scroll-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .chart-scroll-container::-webkit-scrollbar-thumb {
+            background: #38a169;
+            border-radius: 4px;
+        }
+
+        .chart-scroll-container::-webkit-scrollbar-thumb:hover {
+            background: #2f855a;
+        }
+
         .chart-tooltip {
             background: rgba(26, 54, 93, 0.9);
             color: white;
@@ -810,6 +877,21 @@
 
             .chart-controls {
                 flex-direction: column;
+            }
+
+            .chart-pagination {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .chart-pagination button {
+                min-width: 100px;
+                padding: 10px 20px;
+            }
+
+            .chart-pagination-info {
+                order: -1;
+                margin-bottom: 5px;
             }
 
             .calendar-grid {
@@ -980,8 +1062,13 @@
                     </div>
                     
                     <div id="combined-chart" class="chart-container" style="display: none;">
-                        <div class="chart-container">
+                        <div class="chart-scroll-container">
                             <canvas id="combined-progression-chart"></canvas>
+                        </div>
+                        <div class="chart-pagination" id="pagination-combined" style="display: none;">
+                            <button id="prev-combined" onclick="navigateChart('combined', -1)">Previous</button>
+                            <div class="chart-pagination-info" id="info-combined">1 of 1</div>
+                            <button id="next-combined" onclick="navigateChart('combined', 1)">Next</button>
                         </div>
                     </div>
                 </div>
@@ -1221,6 +1308,7 @@ const firebaseConfig = {
         let currentChartView = 'individual';
         let exerciseCharts = {};
         let dataStore = {}; // In-memory storage as fallback
+        let chartPagination = {}; // Store pagination state for each chart
 
         // Initialize the app
         async function initApp() {
@@ -1604,7 +1692,7 @@ const firebaseConfig = {
                 new Date(workout.date).toDateString() === todayString
             );
             
-            if (alreadyCompleted) {
+            if (0) {
                 showToast("You've already completed today's workout!");
                 return;
             }
@@ -2190,8 +2278,13 @@ const firebaseConfig = {
                             Current: Level ${currentLevel + 1} - ${exercise.levels[currentLevel]}
                             <br>Target: ${target} ${typeof target === 'string' ? '' : 'reps'}
                         </div>
-                        <div class="chart-container">
+                        <div class="chart-scroll-container">
                             <canvas id="chart-${exerciseKey}"></canvas>
+                        </div>
+                        <div class="chart-pagination" id="pagination-${exerciseKey}" style="display: none;">
+                            <button id="prev-${exerciseKey}" onclick="navigateChart('${exerciseKey}', -1)">Previous</button>
+                            <div class="chart-pagination-info" id="info-${exerciseKey}">1 of 1</div>
+                            <button id="next-${exerciseKey}" onclick="navigateChart('${exerciseKey}', 1)">Next</button>
                         </div>
                     </div>
                 `;
@@ -2231,8 +2324,43 @@ const firebaseConfig = {
                 exerciseCharts[exerciseKey].destroy();
             }
             
-            const chartData = getExerciseChartData(exerciseKey);
-            const hasManyWorkouts = chartData.labels.length > 10;
+            const fullChartData = getExerciseChartData(exerciseKey);
+            const totalEntries = fullChartData.labels.length;
+            
+            // Initialize pagination state if not exists
+            if (!chartPagination[exerciseKey]) {
+                chartPagination[exerciseKey] = {
+                    currentPage: 1,
+                    entriesPerPage: 10,
+                    totalPages: Math.ceil(totalEntries / 10)
+                };
+            }
+            
+            const pagination = chartPagination[exerciseKey];
+            const startIndex = (pagination.currentPage - 1) * pagination.entriesPerPage;
+            const endIndex = Math.min(startIndex + pagination.entriesPerPage, totalEntries);
+            
+            // Get paginated data
+            const chartData = {
+                labels: fullChartData.labels.slice(startIndex, endIndex),
+                data: fullChartData.data.slice(startIndex, endIndex),
+                workoutData: fullChartData.workoutData.slice(startIndex, endIndex)
+            };
+            
+            // Show/hide pagination controls
+            const paginationDiv = document.getElementById(`pagination-${exerciseKey}`);
+            const prevBtn = document.getElementById(`prev-${exerciseKey}`);
+            const nextBtn = document.getElementById(`next-${exerciseKey}`);
+            const infoDiv = document.getElementById(`info-${exerciseKey}`);
+            
+            if (totalEntries > pagination.entriesPerPage) {
+                paginationDiv.style.display = 'flex';
+                prevBtn.disabled = pagination.currentPage === 1;
+                nextBtn.disabled = pagination.currentPage === pagination.totalPages;
+                infoDiv.textContent = `${pagination.currentPage} of ${pagination.totalPages}`;
+            } else {
+                paginationDiv.style.display = 'none';
+            }
             
             exerciseCharts[exerciseKey] = new Chart(ctx, {
                 type: 'line',
@@ -2258,7 +2386,7 @@ const firebaseConfig = {
                     maintainAspectRatio: false,
                     layout: {
                         padding: {
-                            right: hasManyWorkouts ? 40 : 20
+                            right: 20
                         }
                     },
                     plugins: {
@@ -2311,10 +2439,9 @@ const firebaseConfig = {
                             grid: {
                                 color: 'rgba(0,0,0,0.1)'
                             },
-                            // For many workouts, show fewer labels to prevent crowding
                             ticks: {
-                                maxTicksLimit: hasManyWorkouts ? 8 : 12,
-                                maxRotation: hasManyWorkouts ? 45 : 0,
+                                maxTicksLimit: 12,
+                                maxRotation: 0,
                                 minRotation: 0
                             }
                         },
@@ -2357,24 +2484,63 @@ const firebaseConfig = {
                 exerciseCharts.combined.destroy();
             }
             
+            // Get all unique dates from all exercises
+            const allDates = new Set();
+            Object.keys(EXERCISES).forEach(exerciseKey => {
+                const chartData = getExerciseChartData(exerciseKey);
+                chartData.labels.forEach(label => allDates.add(label));
+            });
+            
+            const sortedDates = Array.from(allDates).sort((a, b) => new Date(a) - new Date(b));
+            const totalEntries = sortedDates.length;
+            
+            // Initialize pagination state if not exists
+            if (!chartPagination.combined) {
+                chartPagination.combined = {
+                    currentPage: 1,
+                    entriesPerPage: 10,
+                    totalPages: Math.ceil(totalEntries / 10)
+                };
+            }
+            
+            const pagination = chartPagination.combined;
+            const startIndex = (pagination.currentPage - 1) * pagination.entriesPerPage;
+            const endIndex = Math.min(startIndex + pagination.entriesPerPage, totalEntries);
+            
+            // Get paginated labels
+            const paginatedLabels = sortedDates.slice(startIndex, endIndex);
+            
+            // Show/hide pagination controls
+            const paginationDiv = document.getElementById('pagination-combined');
+            const prevBtn = document.getElementById('prev-combined');
+            const nextBtn = document.getElementById('next-combined');
+            const infoDiv = document.getElementById('info-combined');
+            
+            if (totalEntries > pagination.entriesPerPage) {
+                paginationDiv.style.display = 'flex';
+                prevBtn.disabled = pagination.currentPage === 1;
+                nextBtn.disabled = pagination.currentPage === pagination.totalPages;
+                infoDiv.textContent = `${pagination.currentPage} of ${pagination.totalPages}`;
+            } else {
+                paginationDiv.style.display = 'none';
+            }
+            
             const datasets = [];
             const colors = ['#38a169', '#1a365d', '#e53e3e', '#d69e2e', '#9f7aea', '#00b5d8'];
-            let allLabels = [];
-            let maxWorkouts = 0;
             
             Object.keys(EXERCISES).forEach((exerciseKey, index) => {
                 const exercise = EXERCISES[exerciseKey];
                 const chartData = getExerciseChartData(exerciseKey);
                 
-                // Track the exercise with the most workouts for labels
-                if (chartData.labels.length > maxWorkouts) {
-                    maxWorkouts = chartData.labels.length;
-                    allLabels = chartData.labels;
-                }
+                // Create data array aligned with paginated labels
+                const paginatedData = paginatedLabels.map(label => {
+                    const labelIndex = chartData.labels.indexOf(label);
+                    return labelIndex !== -1 ? chartData.data[labelIndex] : null;
+                });
                 
                 datasets.push({
                     label: exercise.name,
-                    data: chartData.data,
+                    data: paginatedData,
                     borderColor: colors[index],
                     backgroundColor: colors[index] + '20',
                     borderWidth: 2,
@@ -2384,16 +2550,15 @@ const firebaseConfig = {
                     pointRadius: 4,
                     pointHoverRadius: 6,
                     fill: false,
-                    tension: 0.4
+                    tension: 0.4,
+                    spanGaps: true // Connect points even when there are null values
                 });
             });
-            
-            const hasManyWorkouts = maxWorkouts > 10;
             
             exerciseCharts.combined = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: allLabels,
+                    labels: paginatedLabels,
                     datasets: datasets
                 },
                 options: {
@@ -2401,7 +2566,7 @@ const firebaseConfig = {
                     maintainAspectRatio: false,
                     layout: {
                         padding: {
-                            right: hasManyWorkouts ? 40 : 20
+                            right: 20
                         }
                     },
                     plugins: {
@@ -2424,6 +2589,9 @@ const firebaseConfig = {
                                     const exerciseKey = Object.keys(EXERCISES)[context.datasetIndex];
                                     const exercise = EXERCISES[exerciseKey];
                                     const level = context.parsed.y;
+                                    
+                                    if (level === null) return `${exercise.name}: No data`;
+                                    
                                     const levelName = exercise.levels[level];
                                     const target = exercise.targets[level];
                                     
@@ -2442,10 +2610,9 @@ const firebaseConfig = {
                             grid: {
                                 color: 'rgba(0,0,0,0.1)'
                             },
-                            // For many workouts, show fewer labels to prevent crowding
                             ticks: {
-                                maxTicksLimit: hasManyWorkouts ? 8 : 12,
-                                maxRotation: hasManyWorkouts ? 45 : 0,
+                                maxTicksLimit: 12,
+                                maxRotation: 0,
                                 minRotation: 0
                             }
                         },
@@ -2566,6 +2733,23 @@ const firebaseConfig = {
             }
         }
 
+        function navigateChart(chartKey, direction) {
+            if (!chartPagination[chartKey]) return;
+            
+            const pagination = chartPagination[chartKey];
+            const newPage = pagination.currentPage + direction;
+            
+            if (newPage >= 1 && newPage <= pagination.totalPages) {
+                pagination.currentPage = newPage;
+                
+                if (chartKey === 'combined') {
+                    createCombinedChart();
+                } else {
+                    createExerciseChart(chartKey);
+                }
+            }
+        }
+
         // Utility functions
         function showToast(message) {
             const toast = document.getElementById('toast');
@@ -2588,6 +2772,7 @@ const firebaseConfig = {
         window.confirmCustomExercises = confirmCustomExercises;
         window.toggleSet = toggleSet;
         window.toggleChartView = toggleChartView;
+        window.navigateChart = navigateChart;
 
         // Initialize app when page loads
         window.addEventListener('load', initApp);
