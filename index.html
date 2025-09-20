@@ -1692,7 +1692,7 @@ const firebaseConfig = {
                 new Date(workout.date).toDateString() === todayString
             );
             
-            if (0) {
+            if (alreadyCompleted) {
                 showToast("You've already completed today's workout!");
                 return;
             }
@@ -1807,9 +1807,9 @@ const firebaseConfig = {
             let html = '';
             todayExercises.forEach(exerciseKey => {
                 const exercise = EXERCISES[exerciseKey];
-                const currentLevel = userData.levels[exerciseKey] || 0; // Default to 0 if undefined
-                const levelName = exercise.levels[currentLevel] || 'Unknown Level';
-                const target = exercise.targets[currentLevel] || 'Unknown Target';
+                const currentLevel = getValidLevel(exerciseKey, userData.levels[exerciseKey]);
+                const levelName = exercise.levels[currentLevel];
+                const target = exercise.targets[currentLevel];
                 
                 // Debug logging for each exercise
                 console.log(`Exercise: ${exerciseKey}, Level: ${currentLevel}, LevelName: ${levelName}, Target: ${target}`);
@@ -1835,6 +1835,12 @@ const firebaseConfig = {
             if (typeof target === 'string') return target;
             if (exerciseKey === 'twists') return `${target} seconds per side`;
             return `${target} reps`;
+        }
+
+        function getValidLevel(exerciseKey, level) {
+            const exercise = EXERCISES[exerciseKey];
+            const maxLevel = exercise.levels.length - 1;
+            return Math.min(Math.max(level || 0, 0), maxLevel);
         }
 
         // Workout page rendering
@@ -1866,7 +1872,7 @@ const firebaseConfig = {
             if (userData.currentWorkout && isSameDay(new Date(userData.currentWorkout.date), new Date())) {
                 const cw = userData.currentWorkout;
                 Object.keys(cw.exercises || {}).forEach(exKey => {
-                    const newLevel = userData.levels[exKey] ?? cw.exercises[exKey].level;
+                    const newLevel = getValidLevel(exKey, userData.levels[exKey] ?? cw.exercises[exKey].level);
                     cw.exercises[exKey].level = newLevel;
                     cw.exercises[exKey].targetSets = getTargetSets(exKey, newLevel);
                     cw.exercises[exKey].repsPerSet = getRepsPerSet(exKey, newLevel);
@@ -1882,11 +1888,12 @@ const firebaseConfig = {
             };
             
             todayExercises.forEach(exerciseKey => {
+                const validLevel = getValidLevel(exerciseKey, userData.levels[exerciseKey]);
                 userData.currentWorkout.exercises[exerciseKey] = {
-                    level: userData.levels[exerciseKey],
-                    targetSets: getTargetSets(exerciseKey, userData.levels[exerciseKey]),
+                    level: validLevel,
+                    targetSets: getTargetSets(exerciseKey, validLevel),
                     completedSets: [],
-                    repsPerSet: getRepsPerSet(exerciseKey, userData.levels[exerciseKey])
+                    repsPerSet: getRepsPerSet(exerciseKey, validLevel)
                 };
             });
             
@@ -1919,11 +1926,12 @@ const firebaseConfig = {
             };
             
             selectedExercises.forEach(exerciseKey => {
+                const validLevel = getValidLevel(exerciseKey, userData.levels[exerciseKey]);
                 userData.currentWorkout.exercises[exerciseKey] = {
-                    level: userData.levels[exerciseKey],
-                    targetSets: getTargetSets(exerciseKey, userData.levels[exerciseKey]),
+                    level: validLevel,
+                    targetSets: getTargetSets(exerciseKey, validLevel),
                     completedSets: [],
-                    repsPerSet: getRepsPerSet(exerciseKey, userData.levels[exerciseKey])
+                    repsPerSet: getRepsPerSet(exerciseKey, validLevel)
                 };
             });
             
@@ -2110,7 +2118,7 @@ const firebaseConfig = {
             
             Object.keys(EXERCISES).forEach(exerciseKey => {
                 const exercise = EXERCISES[exerciseKey];
-                const currentLevel = userData.levels[exerciseKey] || 0; // Default to 0 if undefined
+                const currentLevel = getValidLevel(exerciseKey, userData.levels[exerciseKey]);
                 const progress = ((currentLevel + 1) / exercise.levels.length) * 100;
                 
                 html += `
@@ -2147,7 +2155,7 @@ const firebaseConfig = {
                                     <div class="level-item ${status}">
                                         <div>
                                             <strong>Level ${index + 1}:</strong> ${level}
-                                            <div class="level-target">Target: ${formatTargetDisplay('${exerciseKey}', target)}</div>
+                                            <div class="level-target">Target: ${formatTargetDisplay(exerciseKey, target)}</div>
                                         </div>
                                         <div style="display: flex; align-items: center; gap: 10px;">
                                             <div class="level-status ${status}">${statusText}</div>
@@ -2291,8 +2299,8 @@ const firebaseConfig = {
             
             Object.keys(EXERCISES).forEach(exerciseKey => {
                 const exercise = EXERCISES[exerciseKey];
-                const currentLevel = userData.levels[exerciseKey] || 0; // Default to 0 if undefined
-                const target = exercise.targets[currentLevel] || 'Unknown Target';
+                const currentLevel = getValidLevel(exerciseKey, userData.levels[exerciseKey]);
+                const target = exercise.targets[currentLevel];
                 
                 html += `
                     <div class="exercise-chart">
@@ -2443,7 +2451,7 @@ const firebaseConfig = {
                                     const result = [
                                         `${exercise.name}`,
                                         `Level ${level + 1}: ${levelName}`,
-                                        `Target: ${formatTargetDisplay('${exerciseKey}', target)}`
+                                        `Target: ${formatTargetDisplay(exerciseKey, target)}`
                                     ];
                                     
                                     if (workoutInfo.exerciseData && workoutInfo.exerciseData.completedReps) {
@@ -2621,7 +2629,7 @@ const firebaseConfig = {
                                     const levelName = exercise.levels[level];
                                     const target = exercise.targets[level];
                                     
-                                    return `${exercise.name}: Level ${level + 1} (${levelName}) - Target: ${formatTargetDisplay('${exerciseKey}', target)}`;
+                                    return `${exercise.name}: Level ${level + 1} (${levelName}) - Target: ${formatTargetDisplay(exerciseKey, target)}`;
                                 }
                             }
                         }
